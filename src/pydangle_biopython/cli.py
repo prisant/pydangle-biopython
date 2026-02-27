@@ -8,7 +8,6 @@ from Bio.PDB import MMCIFParser, PDBParser
 
 from pydangle_biopython.measure import process_measurement_commands
 
-
 # ---------------------------------------------------------------------------
 # File format detection
 # ---------------------------------------------------------------------------

@@ -18,7 +18,6 @@ from pydangle_biopython.measure import (
 )
 from pydangle_biopython.parser import command_string_parser
 
-
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------

@@ -12,7 +12,6 @@ from Bio.PDB.vectors import Vector, calc_angle, calc_dihedral
 
 from pydangle_biopython.parser import command_string_parser
 
-
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------

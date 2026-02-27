@@ -17,7 +17,6 @@ import re
 
 from pydangle_biopython.builtins import BUILTIN_COMMANDS
 
-
 # ---------------------------------------------------------------------------
 # Function key synonyms → canonical form
 # ---------------------------------------------------------------------------
