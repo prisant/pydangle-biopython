@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# post-commit hook — auto-generates CHANGELOG.md and amends the commit.
+#
+# Install with: make install-hooks
+# Disable temporarily: SKIP_CHANGELOG=1 git commit -m "..."
+
+set -euo pipefail
+
+if [ "${SKIP_CHANGELOG:-}" = "1" ]; then
+    exit 0
+fi
+
+# Prevent infinite loop (amend triggers post-commit again)
+LOCK="/tmp/.changelog-lock-$$"
+if [ -f "$LOCK" ]; then
+    rm -f "$LOCK"
+    exit 0
+fi
+touch "$LOCK"
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SCRIPT="$REPO_ROOT/scripts/generate_changelog.sh"
+
+if [ -x "$SCRIPT" ]; then
+    "$SCRIPT"
+    git add "$REPO_ROOT/CHANGELOG.md"
+    SKIP_CHANGELOG=1 git commit --amend --no-edit --no-verify >/dev/null 2>&1
+fi
+
+rm -f "$LOCK"

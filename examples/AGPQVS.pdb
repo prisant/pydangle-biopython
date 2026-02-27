@@ -1,0 +1,41 @@
+HEADER    HEXAPEPTIDE AGPQVS
+TITLE     MODELED STRUCTURE OF AGPQVS HEXAPEPTIDE
+ATOM      1  N   ALA A   1      -0.000   0.000   0.000  1.00  0.00           N
+ATOM      2  CA  ALA A   1       1.450   0.000   0.000  1.00  0.00           C
+ATOM      3  C   ALA A   1       2.010   1.410   0.000  1.00  0.00           C
+ATOM      4  O   ALA A   1       1.270   2.390   0.000  1.00  0.00           O
+ATOM      5  CB  ALA A   1       2.000  -0.780   1.200  1.00  0.00           C
+ATOM      6  N   GLY A   2       3.330   1.520   0.000  1.00  0.00           N
+ATOM      7  CA  GLY A   2       4.010   2.800   0.000  1.00  0.00           C
+ATOM      8  C   GLY A   2       3.590   3.640  -1.200  1.00  0.00           C
+ATOM      9  O   GLY A   2       3.920   4.830  -1.240  1.00  0.00           O
+ATOM     10  N   PRO A   3       2.870   2.990  -2.140  1.00  0.00           N
+ATOM     11  CA  PRO A   3       2.430   3.720  -3.330  1.00  0.00           C
+ATOM     12  C   PRO A   3       3.350   3.440  -4.520  1.00  0.00           C
+ATOM     13  O   PRO A   3       3.340   4.170  -5.520  1.00  0.00           O
+ATOM     14  CB  PRO A   3       0.990   3.210  -3.480  1.00  0.00           C
+ATOM     15  CG  PRO A   3       0.790   2.310  -2.290  1.00  0.00           C
+ATOM     16  CD  PRO A   3       1.750   2.660  -1.180  1.00  0.00           C
+ATOM     17  N   GLN A   4       4.150   2.390  -4.400  1.00  0.00           N
+ATOM     18  CA  GLN A   4       5.080   2.030  -5.460  1.00  0.00           C
+ATOM     19  C   GLN A   4       4.440   0.940  -6.310  1.00  0.00           C
+ATOM     20  O   GLN A   4       4.990   0.670  -7.390  1.00  0.00           O
+ATOM     21  CB  GLN A   4       6.440   1.580  -4.900  1.00  0.00           C
+ATOM     22  CG  GLN A   4       7.310   2.730  -4.360  1.00  0.00           C
+ATOM     23  CD  GLN A   4       8.730   2.250  -4.140  1.00  0.00           C
+ATOM     24  OE1 GLN A   4       9.140   1.170  -4.590  1.00  0.00           O
+ATOM     25  NE2 GLN A   4       9.470   3.070  -3.410  1.00  0.00           N
+ATOM     26  N   VAL A   5       3.260   0.310  -5.830  1.00  0.00           N
+ATOM     27  CA  VAL A   5       2.560  -0.740  -6.550  1.00  0.00           C
+ATOM     28  C   VAL A   5       1.150  -0.340  -6.930  1.00  0.00           C
+ATOM     29  O   VAL A   5       0.460  -1.070  -7.650  1.00  0.00           O
+ATOM     30  CB  VAL A   5       2.520  -2.070  -5.750  1.00  0.00           C
+ATOM     31  CG1 VAL A   5       1.850  -3.150  -6.580  1.00  0.00           C
+ATOM     32  CG2 VAL A   5       3.920  -2.500  -5.380  1.00  0.00           C
+ATOM     33  N   SER A   6       0.730   0.810  -6.420  1.00  0.00           N
+ATOM     34  CA  SER A   6      -0.590   1.300  -6.720  1.00  0.00           C
+ATOM     35  C   SER A   6      -0.650   2.780  -6.370  1.00  0.00           C
+ATOM     36  O   SER A   6      -1.680   3.430  -6.580  1.00  0.00           O
+ATOM     37  CB  SER A   6      -1.010   1.090  -8.180  1.00  0.00           C
+ATOM     38  OG  SER A   6      -0.230   1.870  -9.050  1.00  0.00           O
+END

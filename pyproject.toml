@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pydangle-biopython"
+version = "0.1.0"
+description = "Compute distances, angles, and dihedral angles in protein and nucleic acid structures (BioPython backend)"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Michael G. Prisant", email = "info@prisantscientific.org"},
+]
+maintainers = [
+    {name = "Michael G. Prisant", email = "info@prisantscientific.org"},
+]
+keywords = ["structural biology", "PDB", "mmCIF", "dihedral", "protein", "RNA", "DNA", "MolProbity"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "biopython>=1.80",
+    "numpy>=1.21",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+]
+
+[project.scripts]
+pydangle-biopython = "pydangle_biopython.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/prisant/pydangle-biopython"
+Repository = "https://github.com/prisant/pydangle-biopython"
+Issues = "https://github.com/prisant/pydangle-biopython/issues"
+Documentation = "https://prisant.github.io/pydangle-biopython"
+Changelog = "https://github.com/prisant/pydangle-biopython/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pydangle_biopython"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
