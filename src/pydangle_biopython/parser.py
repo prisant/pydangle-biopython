@@ -20,7 +20,7 @@ from pydangle_biopython.builtins import BUILTIN_COMMANDS
 # ---------------------------------------------------------------------------
 # Function key synonyms → canonical form
 # ---------------------------------------------------------------------------
-FUNCTION_KEY_MAP = {
+FUNCTION_KEY_MAP: dict[str, str] = {
     'dis':      'distance',
     'dist':     'distance',
     'distance': 'distance',
@@ -34,18 +34,24 @@ FUNCTION_KEY_MAP = {
 }
 
 # Expected argument counts per function type
-_EXPECTED_ARGS = {
+_EXPECTED_ARGS: dict[str, int] = {
     'distance': 2,
     'angle':    3,
     'dihedral': 4,
 }
 
 
+# Type aliases for parsed command specifications
+AtomPos = tuple[int, re.Pattern[str]]
+ArgList = list[AtomPos]
+ParsedCommand = tuple[str, str, list[ArgList]]
+
+
 # ---------------------------------------------------------------------------
 # Low-level tokenisation helpers
 # ---------------------------------------------------------------------------
 
-def _tokenize(s, delimiter):
+def _tokenize(s: str, delimiter: str) -> list[str]:
     """Split string *s* on *delimiter* and strip whitespace from each token."""
     return [tok.strip() for tok in s.split(delimiter)]
 
@@ -54,7 +60,7 @@ def _tokenize(s, delimiter):
 # Parsing stages
 # ---------------------------------------------------------------------------
 
-def expand_command_list(command_string):
+def expand_command_list(command_string: str) -> list[str]:
     """Stage 1 – split on semicolons and expand builtin names.
 
     Parameters
@@ -80,7 +86,7 @@ def expand_command_list(command_string):
     return expanded
 
 
-def parse_command_fields(command_string):
+def parse_command_fields(command_string: str) -> tuple[str, str, str]:
     """Stage 2 – split a single command into (function_key, label, arg_string).
 
     Parameters
@@ -112,7 +118,7 @@ def parse_command_fields(command_string):
     return FUNCTION_KEY_MAP[raw_key_lower], label.strip(), arg_string.strip()
 
 
-def parse_alternative_arg_lists(arg_string):
+def parse_alternative_arg_lists(arg_string: str) -> list[str]:
     """Stage 3 – split on ``|`` to get alternative argument lists.
 
     The ``|`` operator allows specifying alternative atom sets (e.g. for
@@ -129,7 +135,7 @@ def parse_alternative_arg_lists(arg_string):
     return [s for s in _tokenize(arg_string, '|') if s]
 
 
-def parse_atom_list(function_key, arg_list_string):
+def parse_atom_list(function_key: str, arg_list_string: str) -> list[str]:
     """Stage 4 – split on commas to get individual atom position strings.
 
     Parameters
@@ -157,7 +163,7 @@ def parse_atom_list(function_key, arg_list_string):
     return atoms
 
 
-def parse_atom_position(atom_pos_string):
+def parse_atom_position(atom_pos_string: str) -> AtomPos:
     """Stage 5 – parse a single atom position into (offset, name_regex).
 
     An atom position string has the form ``[residue_offset] atom_name``
@@ -216,7 +222,7 @@ def parse_atom_position(atom_pos_string):
 # Top-level parser
 # ---------------------------------------------------------------------------
 
-def command_string_parser(command_string):
+def command_string_parser(command_string: str) -> list[ParsedCommand]:
     """Parse a full command string into structured measurement specifications.
 
     Parameters

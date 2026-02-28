@@ -3,8 +3,9 @@
 import argparse
 import os
 import sys
+from typing import Any
 
-from Bio.PDB import MMCIFParser, PDBParser
+from Bio.PDB import MMCIFParser, PDBParser  # type: ignore[attr-defined]
 
 from pydangle_biopython.measure import process_measurement_commands
 
@@ -118,12 +119,15 @@ def main(argv: list[str] | None = None) -> int:
 
     # Parse structure
     basename = os.path.basename(args.structure_file)
+    struct_parser: Any
     if file_format == 'cif':
-        parser = MMCIFParser(QUIET=True)
+        struct_parser = MMCIFParser(QUIET=True)  # type: ignore[no-untyped-call]
     else:
-        parser = PDBParser(QUIET=True)
+        struct_parser = PDBParser(QUIET=True)  # type: ignore[no-untyped-call]
 
-    structure = parser.get_structure('X', args.structure_file)
+    structure = struct_parser.get_structure(
+        'X', args.structure_file,
+    )
 
     # Run measurements
     output_lines = process_measurement_commands(

@@ -4,19 +4,22 @@ Computes distances, angles, and dihedral angles from parsed command
 specifications and BioPython structure objects.
 """
 
+from __future__ import annotations
+
 import math
 import random
 import re
+from typing import Any
 
 from Bio.PDB.vectors import Vector, calc_angle, calc_dihedral
 
-from pydangle_biopython.parser import command_string_parser
+from pydangle_biopython.parser import ParsedCommand, command_string_parser
 
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------
 
-def angle_to_string(radians):
+def angle_to_string(radians: float) -> str:
     """Convert angle from radians to a formatted degree string.
 
     Parameters
@@ -33,7 +36,7 @@ def angle_to_string(radians):
     return f"{math.degrees(radians):.3f}".rstrip('0').rstrip('.')
 
 
-def number_to_string(number):
+def number_to_string(number: float) -> str:
     """Convert a number to a formatted string.
 
     Parameters
@@ -52,7 +55,7 @@ def number_to_string(number):
 # Geometry helpers
 # ---------------------------------------------------------------------------
 
-def calc_dist(v1, v2):
+def calc_dist(v1: Any, v2: Any) -> float:
     """Compute the Euclidean distance between two BioPython Vector objects.
 
     Parameters
@@ -63,15 +66,15 @@ def calc_dist(v1, v2):
     -------
     float
     """
-    return (v1 - v2).norm()
+    return float((v1 - v2).norm())
 
 
-def _is_origin(cartesian_vector):
+def _is_origin(cartesian_vector: Any) -> bool:
     """Check whether a vector is at the origin (all components zero)."""
     return all(abs(c) < 1e-12 for c in cartesian_vector)
 
 
-def _add_jitter(cartesian_vector, jitter_range=0.0001):
+def _add_jitter(cartesian_vector: Any, jitter_range: float = 0.0001) -> Any:
     """Add small random jitter to a vector to avoid degenerate geometry.
 
     This prevents division-by-zero errors when atoms happen to sit at
@@ -86,7 +89,7 @@ def _add_jitter(cartesian_vector, jitter_range=0.0001):
     -------
     Bio.PDB.vectors.Vector
     """
-    return Vector(
+    return Vector(  # type: ignore[no-untyped-call]
         cartesian_vector[0] + random.uniform(-jitter_range, jitter_range),
         cartesian_vector[1] + random.uniform(-jitter_range, jitter_range),
         cartesian_vector[2] + random.uniform(-jitter_range, jitter_range),
@@ -97,7 +100,7 @@ def _add_jitter(cartesian_vector, jitter_range=0.0001):
 # Calculation dispatch
 # ---------------------------------------------------------------------------
 
-def calc_wrapper(function_key, args, unknown_str):
+def calc_wrapper(function_key: str, args: list[Any], unknown_str: str) -> str:
     """Dispatch a geometry calculation based on the function key.
 
     Parameters
@@ -123,11 +126,15 @@ def calc_wrapper(function_key, args, unknown_str):
     try:
         if function_key == 'dihedral' and n == 4:
             return angle_to_string(
-                calc_dihedral(args[0], args[1], args[2], args[3])
+                calc_dihedral(  # type: ignore[no-untyped-call]
+                    args[0], args[1], args[2], args[3],
+                )
             )
         elif function_key == 'angle' and n == 3:
             return angle_to_string(
-                calc_angle(args[0], args[1], args[2])
+                calc_angle(  # type: ignore[no-untyped-call]
+                    args[0], args[1], args[2],
+                )
             )
         elif function_key == 'distance' and n == 2:
             return number_to_string(calc_dist(args[0], args[1]))
@@ -142,7 +149,9 @@ def calc_wrapper(function_key, args, unknown_str):
 # Per-residue measurement
 # ---------------------------------------------------------------------------
 
-def compute_measurement(command, chain, residue_index, unknown_str):
+def compute_measurement(
+    command: ParsedCommand, chain: Any, residue_index: int, unknown_str: str,
+) -> str:
     """Compute a single measurement for one residue.
 
     Parameters
@@ -198,17 +207,17 @@ def compute_measurement(command, chain, residue_index, unknown_str):
 _HET_RE = re.compile(r'^H_')
 
 
-def _is_het_residue(residue):
+def _is_het_residue(residue: Any) -> bool:
     """Return True if *residue* is a heteroatom group (water, ligand, etc.)."""
     het_flag = residue.get_id()[0]
-    return het_flag != ' '
+    return bool(het_flag != ' ')
 
 
 # ---------------------------------------------------------------------------
 # Formatting helpers for output lines
 # ---------------------------------------------------------------------------
 
-def _format_residue_id(residue):
+def _format_residue_id(residue: Any) -> str:
     """Format a residue identifier string.
 
     Returns
@@ -228,8 +237,12 @@ def _format_residue_id(residue):
 # ---------------------------------------------------------------------------
 
 def process_measurement_for_residue(
-    label, chain, residue_index, command_list, unknown_str="__?__"
-):
+    label: str,
+    chain: Any,
+    residue_index: int,
+    command_list: list[ParsedCommand],
+    unknown_str: str = "__?__",
+) -> str | None:
     """Compute all measurements for a single residue.
 
     Parameters
@@ -266,7 +279,12 @@ def process_measurement_for_residue(
     return None
 
 
-def process_measurement_commands(label, structure, commands, unknown_str="__?__"):
+def process_measurement_commands(
+    label: str,
+    structure: Any,
+    commands: str,
+    unknown_str: str = "__?__",
+) -> list[str]:
     """Process measurement commands on an entire structure.
 
     Parameters
