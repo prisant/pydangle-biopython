@@ -50,6 +50,7 @@ PROTEIN_SIDECHAIN = {
         "dihedral: chi3:"
         " i _CB_, i /_[ACNOS]G[_1]/,"
         " i /_[ACNOS]D[_1]/, i /_[ACNOS]E[_1]/"
+        " | i _CB_, i _CG_, i _CD_, i _N__"
     ),
     'chi4': (
         "dihedral: chi4:"
