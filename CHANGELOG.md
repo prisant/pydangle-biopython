@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add PRO-specific chi3 definition (CB-CG-CD-N) (be00b98)
+- refactor: move tau to PROTEIN_BACKBONE, add pbNCAC alias tau is a bond angle (N-CA-C), not a dihedral. Moved to PROTEIN_BACKBONE with a pbNCAC alias following the naming convention of other backbone angle specs. The tau key is retained for Java Dangle compatibility. (8111104)
+- feat: add PRO-specific chi3 definition (CB-CG-CD-N) (02ab062)
 - fix: add type annotations for mypy strict mode (b0fa972)
 - to correct lint errors ran ruff check --fix src/ tests/ (3323e13)
 - feat: initial pydangle-biopython project (80e2978)

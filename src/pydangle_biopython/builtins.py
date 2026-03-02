@@ -24,6 +24,8 @@ PROTEIN_BACKBONE = {
     'pbCACNa': "angle: pbCACNa: i _CA_, i _C__, i+1 _N__",
     'pbOCNa':  "angle: pbOCNa:  i _O__, i _C__, i+1 _N__",
     'pbCNCAa': "angle: pbCNCAa: i _C__, i+1 _N__, i+1 _CA_",
+    'pbNCAC':  "angle: tau:     i _N__,   i _CA_, i _C__",
+    'tau':     "angle: tau:   i _N__,   i _CA_, i _C__",
     # Virtual Cα measurements
     'vCAd': "distance: vCAd: i-1 _CA_, i _CA_",
     'vCAa': "angle:    vCAa: i-1 _CA_, i _CA_, i+1 _CA_",
@@ -37,7 +39,6 @@ PROTEIN_DIHEDRALS = {
     'phi':   "dihedral: phi:   i-1 _C__, i _N__, i _CA_, i _C__",
     'psi':   "dihedral: psi:   i _N__,   i _CA_, i _C__, i+1 _N__",
     'omega': "dihedral: omega: i _CA_,   i _C__, i+1 _N__, i+1 _CA_",
-    'tau':   "angle:    tau:   i _N__,   i _CA_, i _C__",
 }
 
 # ---------------------------------------------------------------------------
