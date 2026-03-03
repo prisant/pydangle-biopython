@@ -110,7 +110,7 @@ class TestParseCommandFields:
             parse_command_fields("bogus: test: i _CA_, i+1 _CA_")
 
     def test_wrong_field_count_raises(self):
-        with pytest.raises(ValueError, match="3 colon-separated fields"):
+        with pytest.raises(ValueError, match="Two-field command requires"):
             parse_command_fields("dihedral: phi")
 
 

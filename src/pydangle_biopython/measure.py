@@ -13,6 +13,7 @@ from typing import Any
 from Bio.PDB.Polypeptide import CaPPBuilder
 from Bio.PDB.vectors import Vector, calc_angle, calc_dihedral
 
+from pydangle_biopython.labels import LABEL_REGISTRY
 from pydangle_biopython.parser import ParsedCommand, command_string_parser
 
 # ---------------------------------------------------------------------------
@@ -176,6 +177,14 @@ def compute_measurement(
     output = unknown_str
     list_length = len(residue_list)
     function_key = command[0]
+
+    # Label commands: dispatch to registered label function
+    if function_key == 'label':
+        label_name = command[1]
+        label_func = LABEL_REGISTRY.get(label_name)
+        if label_func is not None:
+            return str(label_func(residue_list, residue_index, unknown_str))
+        return unknown_str
 
     # Loop over alternative argument lists (separated by | in the command)
     for arg_list in command[2]:

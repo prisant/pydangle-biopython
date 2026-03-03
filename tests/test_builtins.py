@@ -9,6 +9,7 @@ from pydangle_biopython.builtins import (
     PROTEIN_BACKBONE,
     PROTEIN_DIHEDRALS,
     PROTEIN_SIDECHAIN,
+    RESIDUE_LABELS,
 )
 from pydangle_biopython.parser import command_string_parser
 
@@ -20,7 +21,8 @@ class TestBuiltinDefinitions:
         """All sub-dictionaries should have unique keys."""
         all_keys = []
         for d in (PROTEIN_BACKBONE, PROTEIN_DIHEDRALS, PROTEIN_SIDECHAIN,
-                  NUCLEIC_ACID_BACKBONE, NUCLEIC_ACID_ANGLES):
+                  NUCLEIC_ACID_BACKBONE, NUCLEIC_ACID_ANGLES,
+                  RESIDUE_LABELS):
             all_keys.extend(d.keys())
         assert len(all_keys) == len(set(all_keys)), "Duplicate builtin keys found"
 
@@ -29,7 +31,7 @@ class TestBuiltinDefinitions:
         expected_count = (
             len(PROTEIN_BACKBONE) + len(PROTEIN_DIHEDRALS) +
             len(PROTEIN_SIDECHAIN) + len(NUCLEIC_ACID_BACKBONE) +
-            len(NUCLEIC_ACID_ANGLES)
+            len(NUCLEIC_ACID_ANGLES) + len(RESIDUE_LABELS)
         )
         assert len(BUILTIN_COMMANDS) == expected_count
 
@@ -39,18 +41,31 @@ class TestBuiltinDefinitions:
         result = command_string_parser(name)
         assert len(result) == 1
         fun_key, label, arg_lists = result[0]
-        assert fun_key in ('distance', 'angle', 'dihedral')
+        assert fun_key in ('distance', 'angle', 'dihedral', 'label')
         assert label  # label should be non-empty
-        assert len(arg_lists) >= 1
+        if fun_key == 'label':
+            assert arg_lists == []
+        else:
+            assert len(arg_lists) >= 1
 
     @pytest.mark.parametrize("name", list(BUILTIN_COMMANDS.keys()))
-    def test_builtin_has_three_fields(self, name):
-        """Each builtin command string should have exactly 3 colon-separated fields."""
+    def test_builtin_has_correct_fields(self, name):
+        """Each builtin should have correct colon-separated fields.
+
+        Labels have 2 fields; measurements have 3.
+        """
         cmd_str = BUILTIN_COMMANDS[name]
         fields = [f.strip() for f in cmd_str.split(':')]
-        assert len(fields) == 3, (
-            f"Builtin {name!r} has {len(fields)} fields instead of 3: {cmd_str!r}"
-        )
+        if name in RESIDUE_LABELS:
+            assert len(fields) == 2, (
+                f"Label builtin {name!r} has {len(fields)} fields instead of 2: "
+                f"{cmd_str!r}"
+            )
+        else:
+            assert len(fields) == 3, (
+                f"Builtin {name!r} has {len(fields)} fields instead of 3: "
+                f"{cmd_str!r}"
+            )
 
 
 class TestProteinBuiltins:

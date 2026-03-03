@@ -7,6 +7,11 @@ Atom specifications use:
     - Residue offset notation: i-1, i, i+1, i+2 (default is i)
     - Underscore (_) in place of spaces in atom names
     - /regexp/ for regular expression matching of atom names
+
+Label builtins use the form:
+    "label: label_name"
+with no atom specifications; the label function determines what
+structural data it needs internally.
 """
 
 # ---------------------------------------------------------------------------
@@ -117,11 +122,29 @@ NUCLEIC_ACID_ANGLES = {
 }
 
 # ---------------------------------------------------------------------------
+# Residue classification labels
+#
+# These use the ``label`` function type rather than geometric measurements.
+# The label functions are defined in pydangle_biopython.labels and
+# dispatched by name via the LABEL_REGISTRY.
+# ---------------------------------------------------------------------------
+RESIDUE_LABELS = {
+    'is_cis':        "label: is_cis",
+    'is_trans':       "label: is_trans",
+    'is_gly':         "label: is_gly",
+    'is_pro':         "label: is_pro",
+    'is_ileval':      "label: is_ileval",
+    'is_prepro':      "label: is_prepro",
+    'rama_category':  "label: rama_category",
+}
+
+# ---------------------------------------------------------------------------
 # Combined dictionary of all builtins
 # ---------------------------------------------------------------------------
-BUILTIN_COMMANDS = {}
+BUILTIN_COMMANDS: dict[str, str] = {}
 BUILTIN_COMMANDS.update(PROTEIN_BACKBONE)
 BUILTIN_COMMANDS.update(PROTEIN_DIHEDRALS)
 BUILTIN_COMMANDS.update(PROTEIN_SIDECHAIN)
 BUILTIN_COMMANDS.update(NUCLEIC_ACID_BACKBONE)
 BUILTIN_COMMANDS.update(NUCLEIC_ACID_ANGLES)
+BUILTIN_COMMANDS.update(RESIDUE_LABELS)

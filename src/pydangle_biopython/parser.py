@@ -31,6 +31,8 @@ FUNCTION_KEY_MAP: dict[str, str] = {
     'tors':     'dihedral',
     'torsion':  'dihedral',
     'dihedral': 'dihedral',
+    'label':    'label',
+    'lbl':      'label',
 }
 
 # Expected argument counts per function type
@@ -38,6 +40,7 @@ _EXPECTED_ARGS: dict[str, int] = {
     'distance': 2,
     'angle':    3,
     'dihedral': 4,
+    # 'label' has no atom arguments — handled separately
 }
 
 
@@ -107,9 +110,23 @@ def parse_command_fields(command_string: str) -> tuple[str, str, str]:
         or if the function key is unrecognised.
     """
     fields = _tokenize(command_string, ':')
+    if len(fields) == 2:
+        # Label commands: "label: name" (no atom args)
+        raw_key, label = fields
+        raw_key_lower = raw_key.strip().lower()
+        if raw_key_lower not in FUNCTION_KEY_MAP:
+            raise ValueError(f"Unknown function key: {raw_key!r}")
+        canonical = FUNCTION_KEY_MAP[raw_key_lower]
+        if canonical != 'label':
+            raise ValueError(
+                f"Two-field command requires 'label' function type, "
+                f"got {raw_key!r}: {command_string!r}"
+            )
+        return 'label', label.strip(), ''
     if len(fields) != 3:
         raise ValueError(
-            f"Expected 3 colon-separated fields, got {len(fields)}: {command_string!r}"
+            f"Expected 2 or 3 colon-separated fields, got {len(fields)}: "
+            f"{command_string!r}"
         )
     raw_key, label, arg_string = fields
     raw_key_lower = raw_key.strip().lower()
@@ -241,9 +258,13 @@ def command_string_parser(command_string: str) -> list[ParsedCommand]:
         - *arg_lists* is a ``list[list[tuple[int, re.Pattern]]]``
           (outer list = alternatives via ``|``; inner list = atom positions).
     """
-    parsed_commands = []
+    parsed_commands: list[ParsedCommand] = []
     for cmd_str in expand_command_list(command_string):
         fun_key, label, arg_str = parse_command_fields(cmd_str)
+        if fun_key == 'label':
+            # Label commands have no atom arguments
+            parsed_commands.append((fun_key, label, []))
+            continue
         alternatives = []
         for alt_str in parse_alternative_arg_lists(arg_str):
             atom_positions = []
