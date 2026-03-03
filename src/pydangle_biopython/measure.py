@@ -11,6 +11,7 @@ import random
 import re
 from typing import Any
 
+from Bio.PDB.Polypeptide import PPBuilder
 from Bio.PDB.vectors import Vector, calc_angle, calc_dihedral
 
 from pydangle_biopython.parser import ParsedCommand, command_string_parser
@@ -150,7 +151,10 @@ def calc_wrapper(function_key: str, args: list[Any], unknown_str: str) -> str:
 # ---------------------------------------------------------------------------
 
 def compute_measurement(
-    command: ParsedCommand, chain: Any, residue_index: int, unknown_str: str,
+    command: ParsedCommand,
+    residue_list: list[Any],
+    residue_index: int,
+    unknown_str: str,
 ) -> str:
     """Compute a single measurement for one residue.
 
@@ -158,10 +162,10 @@ def compute_measurement(
     ----------
     command : tuple
         Parsed command tuple ``(function_key, label, arg_lists)``.
-    chain : Bio.PDB.Chain.Chain
-        The chain containing the residue.
+    residue_list : list[Bio.PDB.Residue.Residue]
+        Contiguous list of residues (e.g. a polypeptide fragment).
     residue_index : int
-        Index of the current residue in ``chain.child_list``.
+        Index of the current residue in *residue_list*.
     unknown_str : str
         String to return if the measurement cannot be computed.
 
@@ -171,17 +175,17 @@ def compute_measurement(
         Formatted measurement result, or *unknown_str*.
     """
     output = unknown_str
-    chain_length = len(chain.child_list)
+    list_length = len(residue_list)
     function_key = command[0]
 
     # Loop over alternative argument lists (separated by | in the command)
     for arg_list in command[2]:
-        vector_list = []
+        vector_list: list[Any] = []
         for offset, name_regex in arg_list:
             pos = residue_index + offset
-            if pos < 0 or pos >= chain_length:
+            if pos < 0 or pos >= list_length:
                 break  # Out of bounds → can't compute this alternative
-            residue = chain.child_list[pos]
+            residue = residue_list[pos]
             matched = False
             for atom in residue:
                 if name_regex.match(atom.get_fullname()):
@@ -233,12 +237,54 @@ def _format_residue_id(residue: Any) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Polypeptide fragment builder
+# ---------------------------------------------------------------------------
+
+def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
+    """Split a model into contiguous polypeptide fragments.
+
+    Uses BioPython's ``PPBuilder`` to detect chain breaks based on
+    peptide bond distance (C-N < 1.6 Angstrom by default).  For
+    chains with no peptide fragments (e.g. nucleic acids), falls
+    back to the raw residue list.
+
+    Parameters
+    ----------
+    model : Bio.PDB.Model.Model
+
+    Returns
+    -------
+    list of (chain_id, residue_list) tuples
+        Each tuple contains the chain identifier and a list of
+        contiguous residues forming a polypeptide fragment.
+    """
+    ppb = PPBuilder()  # type: ignore[no-untyped-call]
+    fragments: list[tuple[str, list[Any]]] = []
+    for chain in model:
+        pp_list = ppb.build_peptides(  # type: ignore[no-untyped-call]
+            chain,
+        )
+        if pp_list:
+            for pp in pp_list:
+                residue_list = list(pp)
+                if residue_list:
+                    fragments.append((chain.id, residue_list))
+        else:
+            # No peptide fragments (e.g. nucleic acid chain).
+            # Fall back to raw residue list.
+            residue_list = list(chain.get_residues())
+            if residue_list:
+                fragments.append((chain.id, residue_list))
+    return fragments
+
+
+# ---------------------------------------------------------------------------
 # Top-level processing
 # ---------------------------------------------------------------------------
 
 def process_measurement_for_residue(
     label: str,
-    chain: Any,
+    residue_list: list[Any],
     residue_index: int,
     command_list: list[ParsedCommand],
     unknown_str: str = "__?__",
@@ -249,7 +295,8 @@ def process_measurement_for_residue(
     ----------
     label : str
         Prefix for the output line (typically filename:model:chain).
-    chain : Bio.PDB.Chain.Chain
+    residue_list : list[Bio.PDB.Residue.Residue]
+        Contiguous polypeptide fragment.
     residue_index : int
     command_list : list[tuple]
         Parsed command list from :func:`command_string_parser`.
@@ -260,7 +307,7 @@ def process_measurement_for_residue(
     str or None
         Formatted output line, or ``None`` if no measurements were computed.
     """
-    residue = chain.child_list[residue_index]
+    residue = residue_list[residue_index]
     if _is_het_residue(residue):
         return None
 
@@ -269,7 +316,9 @@ def process_measurement_for_residue(
     hit_count = 0
 
     for command in command_list:
-        result = compute_measurement(command, chain, residue_index, unknown_str)
+        result = compute_measurement(
+            command, residue_list, residue_index, unknown_str,
+        )
         if result != unknown_str:
             hit_count += 1
         out_str += ":" + result
@@ -305,17 +354,18 @@ def process_measurement_commands(
         valid measurement.
     """
     command_list = command_string_parser(commands)
-    output_lines = []
+    output_lines: list[str] = []
     output_lines.append(f"# pydangle: Query string: {commands}")
 
     filename_prefix = label + ":"
     for model in structure:
         model_str = filename_prefix + str(model.id + 1) + ":"
-        for chain in model:
-            chain_str = model_str + str(chain.id) + ":"
-            for i in range(len(chain.child_list)):
+        for chain_id, residue_list in _build_fragments(model):
+            chain_str = model_str + str(chain_id) + ":"
+            for i in range(len(residue_list)):
                 line = process_measurement_for_residue(
-                    chain_str, chain, i, command_list, unknown_str
+                    chain_str, residue_list, i,
+                    command_list, unknown_str,
                 )
                 if line is not None:
                     output_lines.append(line)
