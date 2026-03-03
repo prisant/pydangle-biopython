@@ -77,3 +77,20 @@ class TestCLI:
         assert ret == 0
         output = capsys.readouterr().out
         assert len(output.strip().split('\n')) >= 1
+
+    def test_multiple_files(self, pdb_file, rna_file, capsys):
+        ret = main(['-c', 'phi; psi', pdb_file, pdb_file])
+        assert ret == 0
+        output = capsys.readouterr().out
+        lines = [
+            ln for ln in output.strip().split('\n')
+            if not ln.startswith('#')
+        ]
+        # Two copies of the same file should double the output
+        assert len(lines) > 2
+
+    def test_multiple_files_one_missing(self, pdb_file, capsys):
+        ret = main([pdb_file, 'nonexistent.pdb'])
+        assert ret == 1
+        stderr = capsys.readouterr().err
+        assert 'cannot find' in stderr

@@ -64,6 +64,7 @@ def main(argv: list[str] | None = None) -> int:
         epilog=(
             "Examples:\n"
             "  pydangle-biopython 1abc.pdb\n"
+            "  pydangle-biopython *.pdb\n"
             "  pydangle-biopython -c 'phi; psi; omega'"
             " structure.pdb\n"
             "  pydangle-biopython -c 'alpha; beta; gamma;"
@@ -75,8 +76,9 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     ap.add_argument(
-        'structure_file',
-        help="PDB or mmCIF structure file to process.",
+        'structure_files',
+        nargs='+',
+        help="One or more PDB or mmCIF structure files.",
     )
     ap.add_argument(
         '-c', '--commands',
@@ -106,36 +108,43 @@ def main(argv: list[str] | None = None) -> int:
 
     args = ap.parse_args(argv)
 
-    # Validate input file
-    if not os.path.isfile(args.structure_file):
-        print(
-            f"pydangle-biopython: error: cannot find {args.structure_file}",
-            file=sys.stderr,
+    # Validate all input files before processing any
+    for filepath in args.structure_files:
+        if not os.path.isfile(filepath):
+            print(
+                "pydangle-biopython: error: "
+                f"cannot find {filepath}",
+                file=sys.stderr,
+            )
+            return 1
+
+    # Process each file
+    for filepath in args.structure_files:
+        file_format: str = (
+            args.file_format or _guess_format(filepath)
         )
-        return 1
+        basename = os.path.basename(filepath)
 
-    # Determine format
-    file_format = args.file_format or _guess_format(args.structure_file)
+        struct_parser: Any
+        if file_format == 'cif':
+            struct_parser = MMCIFParser(  # type: ignore[no-untyped-call]
+                QUIET=True,
+            )
+        else:
+            struct_parser = PDBParser(  # type: ignore[no-untyped-call]
+                QUIET=True,
+            )
 
-    # Parse structure
-    basename = os.path.basename(args.structure_file)
-    struct_parser: Any
-    if file_format == 'cif':
-        struct_parser = MMCIFParser(QUIET=True)  # type: ignore[no-untyped-call]
-    else:
-        struct_parser = PDBParser(QUIET=True)  # type: ignore[no-untyped-call]
+        structure = struct_parser.get_structure(
+            'X', filepath,
+        )
 
-    structure = struct_parser.get_structure(
-        'X', args.structure_file,
-    )
+        output_lines = process_measurement_commands(
+            basename, structure, args.command_string,
+        )
 
-    # Run measurements
-    output_lines = process_measurement_commands(
-        basename, structure, args.command_string
-    )
-
-    for line in output_lines:
-        print(line)
+        for line in output_lines:
+            print(line)
 
     return 0
 
