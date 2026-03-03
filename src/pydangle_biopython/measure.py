@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import math
 import random
-import re
 from typing import Any
 
-from Bio.PDB.Polypeptide import PPBuilder
+from Bio.PDB.Polypeptide import CaPPBuilder
 from Bio.PDB.vectors import Vector, calc_angle, calc_dihedral
 
 from pydangle_biopython.parser import ParsedCommand, command_string_parser
@@ -205,16 +204,55 @@ def compute_measurement(
 
 
 # ---------------------------------------------------------------------------
-# Heteroatom filter
+# Polymer residue filter
 # ---------------------------------------------------------------------------
 
-_HET_RE = re.compile(r'^H_')
+# Protein residue names accepted by Java Dangle's isProtOrNucAcid().
+# Includes the 20 standard amino acids plus common modified residues.
+_PROTEIN_NAMES: frozenset[str] = frozenset({
+    # 20 standard amino acids
+    'GLY', 'ALA', 'VAL', 'PHE', 'PRO', 'MET', 'ILE', 'LEU',
+    'ASP', 'GLU', 'LYS', 'ARG', 'SER', 'THR', 'TYR', 'HIS',
+    'CYS', 'ASN', 'GLN', 'TRP',
+    # Ambiguous / modified
+    'ASX', 'GLX',           # ambiguous Asp/Asn, Glu/Gln
+    'ACE', 'FOR',           # acetyl, formyl caps
+    'NH2', 'NME',           # amide caps
+    'MSE',                  # selenomethionine
+    'AIB', 'ABU',           # alpha-aminoisobutyric, alpha-aminobutyric acid
+    'PCA',                  # pyroglutamic acid
+    'MLY', 'M3L',           # methylated lysines
+    'CYO', 'CSD',           # oxidized cysteine, cysteine sulfonic acid
+    'DGN',                  # diaminoglutaric acid
+})
+
+# Nucleic acid residue names accepted by Java Dangle's isProtOrNucAcid().
+_NUCLEIC_ACID_NAMES: frozenset[str] = frozenset({
+    '  C', '  G', '  A', '  T', '  U',
+    'CYT', 'GUA', 'ADE', 'THY', 'URA', 'URI',
+    'GSP', 'H2U', 'PSU', '4SU', '1MG', '2MG', 'M2G',
+    '5MC', '5MU', 'T6A', '1MA', 'RIA', 'OMC', 'OMG',
+    ' YG', '  I', '7MG', 'YYG', 'YG ', 'A2M', '5FU',
+    'G7M', 'OMU', 'PR5', 'FHU', 'XUG', 'A23', 'UMS',
+    'FMU', 'UR3', 'CFL', 'UD5', 'CSL', 'UFT', '5IC',
+    '5BU', 'BGM', 'CBR', 'U34', 'CCC', 'AVC', 'TM2',
+    'AET', ' IU',
+    'C  ', 'G  ', 'A  ', 'T  ', 'U  ', 'I  ',
+    'C', 'G', 'A', 'T', 'U', 'I',
+    ' rC', ' rG', ' rA', ' rT', ' rU',
+    ' dC', ' dG', ' dA', ' dT', ' dU',
+    ' DC', ' DG', ' DA', ' DT', ' DU',
+})
 
 
-def _is_het_residue(residue: Any) -> bool:
-    """Return True if *residue* is a heteroatom group (water, ligand, etc.)."""
-    het_flag = residue.get_id()[0]
-    return bool(het_flag != ' ')
+def _is_polymer_residue(residue: Any) -> bool:
+    """Return True if *residue* is a protein or nucleic acid residue.
+
+    Uses the same residue-name whitelist as Java Dangle's
+    ``isProtOrNucAcid()`` method in ``Measurement.java``.
+    """
+    resname = residue.get_resname()
+    return resname in _PROTEIN_NAMES or resname in _NUCLEIC_ACID_NAMES
 
 
 # ---------------------------------------------------------------------------
@@ -243,10 +281,11 @@ def _format_residue_id(residue: Any) -> str:
 def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
     """Split a model into contiguous polypeptide fragments.
 
-    Uses BioPython's ``PPBuilder`` to detect chain breaks based on
-    peptide bond distance (C-N < 1.6 Angstrom by default).  For
-    chains with no peptide fragments (e.g. nucleic acids), falls
-    back to the raw residue list.
+    Uses BioPython's ``CaPPBuilder`` with ``aa_only=0`` to detect
+    chain breaks based on CA-CA distance (< 4.6 Angstrom), then
+    filters each fragment through the Java Dangle residue-name
+    whitelist.  For chains with no peptide fragments (e.g. nucleic
+    acids), falls back to the raw residue list.
 
     Parameters
     ----------
@@ -258,15 +297,18 @@ def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
         Each tuple contains the chain identifier and a list of
         contiguous residues forming a polypeptide fragment.
     """
-    ppb = PPBuilder()  # type: ignore[no-untyped-call]
+    ppb = CaPPBuilder()  # type: ignore[no-untyped-call]
     fragments: list[tuple[str, list[Any]]] = []
     for chain in model:
         pp_list = ppb.build_peptides(  # type: ignore[no-untyped-call]
-            chain,
+            chain, aa_only=0,
         )
         if pp_list:
             for pp in pp_list:
-                residue_list = list(pp)
+                # Filter fragment to only keep whitelisted residues
+                residue_list = [
+                    r for r in pp if _is_polymer_residue(r)
+                ]
                 if residue_list:
                     fragments.append((chain.id, residue_list))
         else:
@@ -308,7 +350,7 @@ def process_measurement_for_residue(
         Formatted output line, or ``None`` if no measurements were computed.
     """
     residue = residue_list[residue_index]
-    if _is_het_residue(residue):
+    if not _is_polymer_residue(residue):
         return None
 
     res_str = _format_residue_id(residue)
