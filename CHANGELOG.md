@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- fix: use Java Dangle residue-name whitelist for polymer filter (e8dc9d7)
+- docs: update README with development story and Dangle differences (3e37182)
+- fix: use Java Dangle residue-name whitelist for polymer filter (9b25c27)
 - fix: use PPBuilder for chain gap detection, fix RNA fallback (07a88de)
 - fix: correct omega definition to IUPAC convention (8213147)
 - feat: accept multiple structure files on command line (e19c3dc)
