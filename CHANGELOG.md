@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: accept multiple structure files on command line (02660bc)
+- fix: correct omega definition to IUPAC convention (ff198f5)
+- feat: accept multiple structure files on command line (e19c3dc)
 - refactor: move tau to PROTEIN_BACKBONE, add pbNCAC alias tau is a bond angle (N-CA-C), not a dihedral. Moved to PROTEIN_BACKBONE with a pbNCAC alias following the naming convention of other backbone angle specs. The tau key is retained for Java Dangle compatibility. (0d3c5e0)
 - feat: add PRO-specific chi3 definition (CB-CG-CD-N) (02ab062)
 - fix: add type annotations for mypy strict mode (b0fa972)

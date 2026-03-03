@@ -38,7 +38,7 @@ PROTEIN_BACKBONE = {
 PROTEIN_DIHEDRALS = {
     'phi':   "dihedral: phi:   i-1 _C__, i _N__, i _CA_, i _C__",
     'psi':   "dihedral: psi:   i _N__,   i _CA_, i _C__, i+1 _N__",
-    'omega': "dihedral: omega: i _CA_,   i _C__, i+1 _N__, i+1 _CA_",
+    'omega': "dihedral: omega: i-1 _CA_, i-1 _C__, i _N__,  i _CA_",
 }
 
 # ---------------------------------------------------------------------------
