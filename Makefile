@@ -35,5 +35,6 @@ docs-build:
 clean:
 	rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov/ site/
 	find . -type d -name __pycache__ -exec rm -rf {} +
+	find . \( -name '*~' -o -name '*.swp' -o -name '*.swo' -o -name '*.patch' \) -delete
 
 all: lint typecheck test
