@@ -167,6 +167,81 @@ def label_rama_category(
     return 'General'
 
 
+
+
+# ---------------------------------------------------------------------------
+# Atom completeness labels
+# ---------------------------------------------------------------------------
+
+#: Mainchain atom names required for all amino acid residues.
+_MAINCHAIN_ATOMS: frozenset[str] = frozenset({'N', 'CA', 'C', 'O'})
+
+
+def label_has_all_mc(
+    residue_list: list[Any], index: int, unknown: str,
+) -> str:
+    """Return ``'True'`` if all mainchain heavy atoms are present.
+
+    Checks for N, CA, C, and O.
+    """
+    residue = residue_list[index]
+    atom_names = {atom.get_fullname().strip() for atom in residue}
+    return str(_MAINCHAIN_ATOMS.issubset(atom_names))
+
+
+#: Expected sidechain heavy atoms for each standard amino acid.
+#: Atom names are stripped (no space padding).
+_SIDECHAIN_ATOMS: dict[str, frozenset[str]] = {
+    'GLY': frozenset(),
+    'ALA': frozenset({'CB'}),
+    'VAL': frozenset({'CB', 'CG1', 'CG2'}),
+    'LEU': frozenset({'CB', 'CG', 'CD1', 'CD2'}),
+    'ILE': frozenset({'CB', 'CG1', 'CG2', 'CD1'}),
+    'PRO': frozenset({'CB', 'CG', 'CD'}),
+    'PHE': frozenset({'CB', 'CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ'}),
+    'TYR': frozenset({
+        'CB', 'CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH',
+    }),
+    'TRP': frozenset({
+        'CB', 'CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3',
+        'CZ2', 'CZ3', 'CH2',
+    }),
+    'SER': frozenset({'CB', 'OG'}),
+    'THR': frozenset({'CB', 'OG1', 'CG2'}),
+    'CYS': frozenset({'CB', 'SG'}),
+    'MET': frozenset({'CB', 'CG', 'SD', 'CE'}),
+    'ASP': frozenset({'CB', 'CG', 'OD1', 'OD2'}),
+    'GLU': frozenset({'CB', 'CG', 'CD', 'OE1', 'OE2'}),
+    'ASN': frozenset({'CB', 'CG', 'OD1', 'ND2'}),
+    'GLN': frozenset({'CB', 'CG', 'CD', 'OE1', 'NE2'}),
+    'LYS': frozenset({'CB', 'CG', 'CD', 'CE', 'NZ'}),
+    'ARG': frozenset({
+        'CB', 'CG', 'CD', 'NE', 'CZ', 'NH1', 'NH2',
+    }),
+    'HIS': frozenset({'CB', 'CG', 'ND1', 'CD2', 'CE1', 'NE2'}),
+}
+
+
+def label_has_all_sc(
+    residue_list: list[Any], index: int, unknown: str,
+) -> str:
+    """Return ``'True'`` if all expected sidechain heavy atoms are present.
+
+    Uses a lookup table of expected atoms for each standard amino acid.
+    Returns *unknown* for non-standard residues not in the table.
+    GLY always returns ``'True'`` (no sidechain atoms expected).
+    """
+    residue = residue_list[index]
+    resname = residue.get_resname()
+    expected = _SIDECHAIN_ATOMS.get(resname)
+    if expected is None:
+        return unknown
+    if not expected:
+        return 'True'  # GLY
+    atom_names = {atom.get_fullname().strip() for atom in residue}
+    return str(expected.issubset(atom_names))
+
+
 # ---------------------------------------------------------------------------
 # Label dispatch registry
 # ---------------------------------------------------------------------------
@@ -184,5 +259,7 @@ LABEL_REGISTRY: dict[str, LabelFunc] = {
     'is_pro':         label_is_pro,
     'is_ileval':      label_is_ileval,
     'is_prepro':      label_is_prepro,
+    'has_all_mc':     label_has_all_mc,
+    'has_all_sc':     label_has_all_sc,
     'rama_category':  label_rama_category,
 }

@@ -135,6 +135,8 @@ RESIDUE_LABELS = {
     'is_pro':         "label: is_pro",
     'is_ileval':      "label: is_ileval",
     'is_prepro':      "label: is_prepro",
+    'has_all_mc':     "label: has_all_mc",
+    'has_all_sc':     "label: has_all_sc",
     'rama_category':  "label: rama_category",
 }
 

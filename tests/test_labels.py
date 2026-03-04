@@ -3,6 +3,8 @@
 from pydangle_biopython.labels import (
     LABEL_REGISTRY,
     _compute_omega,
+    label_has_all_mc,
+    label_has_all_sc,
     label_is_cis,
     label_is_gly,
     label_is_ileval,
@@ -31,7 +33,9 @@ class TestLabelRegistry:
     def test_all_labels_registered(self):
         expected = {
             'is_cis', 'is_trans', 'is_gly', 'is_pro',
-            'is_ileval', 'is_prepro', 'rama_category',
+            'is_ileval', 'is_prepro',
+            'has_all_mc', 'has_all_sc',
+            'rama_category',
         }
         assert set(LABEL_REGISTRY.keys()) == expected
 
@@ -193,6 +197,71 @@ class TestRamaCategory:
         """SER at index 5 (last residue) should be 'General'."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_rama_category(residue_list, 5, UNK) == 'General'
+
+
+class TestHasAllMc:
+    """Test mainchain atom completeness."""
+
+    def test_complete_residue(self, hexapeptide_chain):
+        """Normal residues should have all mainchain atoms."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_has_all_mc(residue_list, 0, UNK) == 'True'
+
+    def test_all_residues_complete(self, hexapeptide_chain):
+        """All hexapeptide residues should have complete mainchain."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        for i in range(len(residue_list)):
+            assert label_has_all_mc(residue_list, i, UNK) == 'True'
+
+    def test_has_all_mc_in_output(self, hexapeptide_structure):
+        """has_all_mc should produce True/False values in output."""
+        lines = process_measurement_commands(
+            "test", hexapeptide_structure, "has_all_mc",
+        )
+        data_lines = [line for line in lines if not line.startswith('#')]
+        assert len(data_lines) > 0
+        for line in data_lines:
+            value = line.rsplit(':', 1)[-1]
+            assert value in {'True', 'False'}, (
+                f"Invalid has_all_mc value: {value!r}"
+            )
+
+
+class TestHasAllSc:
+    """Test sidechain atom completeness."""
+
+    def test_ala_complete(self, hexapeptide_chain):
+        """ALA (index 0) should have CB."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_has_all_sc(residue_list, 0, UNK) == 'True'
+
+    def test_gly_always_true(self, hexapeptide_chain):
+        """GLY (index 1) has no sidechain; always True."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_has_all_sc(residue_list, 1, UNK) == 'True'
+
+    def test_pro_complete(self, hexapeptide_chain):
+        """PRO (index 2) should have CB, CG, CD."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_has_all_sc(residue_list, 2, UNK) == 'True'
+
+    def test_val_complete(self, hexapeptide_chain):
+        """VAL (index 4) should have CB, CG1, CG2."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_has_all_sc(residue_list, 4, UNK) == 'True'
+
+    def test_has_all_sc_in_output(self, hexapeptide_structure):
+        """has_all_sc should produce True/False values in output."""
+        lines = process_measurement_commands(
+            "test", hexapeptide_structure, "has_all_sc",
+        )
+        data_lines = [line for line in lines if not line.startswith('#')]
+        assert len(data_lines) > 0
+        for line in data_lines:
+            value = line.rsplit(':', 1)[-1]
+            assert value in {'True', 'False', UNK}, (
+                f"Invalid has_all_sc value: {value!r}"
+            )
 
 
 class TestLabelIntegration:
