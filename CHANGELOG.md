@@ -5,7 +5,7 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add has_all_sc label for sidechain atom completeness (9d09203)
+- feat: add has_all_sc label for sidechain atom completeness (5cc303e)
 - feat: add residue classification labels and examples documentation (952e058)
 
 ## v0.2.0 — 2026-03-03
