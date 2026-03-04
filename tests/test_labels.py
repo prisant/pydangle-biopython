@@ -8,8 +8,10 @@ from pydangle_biopython.labels import (
     label_is_cis,
     label_is_gly,
     label_is_ileval,
+    label_is_left,
     label_is_prepro,
     label_is_pro,
+    label_is_right,
     label_is_trans,
     label_rama_category,
 )
@@ -35,6 +37,7 @@ class TestLabelRegistry:
             'is_cis', 'is_trans', 'is_gly', 'is_pro',
             'is_ileval', 'is_prepro',
             'has_all_mc', 'has_all_sc',
+            'is_left', 'is_right',
             'rama_category',
         }
         assert set(LABEL_REGISTRY.keys()) == expected
@@ -262,6 +265,51 @@ class TestHasAllSc:
             assert value in {'True', 'False', UNK}, (
                 f"Invalid has_all_sc value: {value!r}"
             )
+
+
+class TestChirality:
+    """Test Calpha chirality labels."""
+
+    def test_gly_unknown(self, hexapeptide_chain):
+        """GLY (index 1) has no CB; should return unknown."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_is_left(residue_list, 1, UNK) == UNK
+        assert label_is_right(residue_list, 1, UNK) == UNK
+
+    def test_non_gly_returns_bool(self, hexapeptide_chain):
+        """Non-GLY residues should return True or False, not unknown."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        for i in range(len(residue_list)):
+            if residue_list[i].get_resname() == 'GLY':
+                continue
+            assert label_is_left(residue_list, i, UNK) in {'True', 'False'}
+            assert label_is_right(residue_list, i, UNK) in {'True', 'False'}
+
+    def test_left_right_exclusive(self, hexapeptide_chain):
+        """is_left and is_right should be mutually exclusive."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        for i in range(len(residue_list)):
+            left = label_is_left(residue_list, i, UNK)
+            right = label_is_right(residue_list, i, UNK)
+            if left == UNK:
+                assert right == UNK
+            else:
+                assert left != right, (
+                    f"Residue {i}: is_left={left} is_right={right}"
+                )
+
+    def test_chirality_in_output(self, hexapeptide_structure):
+        """is_left should produce valid values in output."""
+        lines = process_measurement_commands(
+            "test", hexapeptide_structure, "is_left; is_right",
+        )
+        data_lines = [line for line in lines if not line.startswith('#')]
+        assert len(data_lines) > 0
+        valid = {'True', 'False', UNK}
+        for line in data_lines:
+            parts = line.split(':')
+            assert parts[-1] in valid
+            assert parts[-2] in valid
 
 
 class TestLabelIntegration:

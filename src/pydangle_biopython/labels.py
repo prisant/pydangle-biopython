@@ -242,6 +242,57 @@ def label_has_all_sc(
     return str(expected.issubset(atom_names))
 
 
+
+# ---------------------------------------------------------------------------
+# Chirality labels
+# ---------------------------------------------------------------------------
+
+def _compute_ca_chirality(residue: Any) -> float | None:
+    """Compute the improper dihedral N-CA-C-CB in degrees.
+
+    Negative for L-amino acids (~-33), positive for D-amino acids.
+    Returns None if any required atom is missing (e.g. GLY).
+    """
+    try:
+        v_cb = residue['CB'].get_vector()
+        v_n = residue['N'].get_vector()
+        v_c = residue['C'].get_vector()
+        v_ca = residue['CA'].get_vector()
+    except (KeyError, TypeError):
+        return None
+    radians = calc_dihedral(  # type: ignore[no-untyped-call]
+        v_cb, v_n, v_c, v_ca,
+    )
+    return float(math.degrees(radians))
+
+
+def label_is_left(
+    residue_list: list[Any], index: int, unknown: str,
+) -> str:
+    """Return ``'True'`` if the residue has L-amino acid chirality.
+
+    Based on the improper dihedral CB-N-C-CA being negative.
+    Returns *unknown* for GLY or if CB is missing.
+    """
+    chi = _compute_ca_chirality(residue_list[index])
+    if chi is None:
+        return unknown
+    return str(chi < 0.0)
+
+
+def label_is_right(
+    residue_list: list[Any], index: int, unknown: str,
+) -> str:
+    """Return ``'True'`` if the residue has D-amino acid chirality.
+
+    Based on the improper dihedral CB-N-C-CA being positive.
+    Returns *unknown* for GLY or if CB is missing.
+    """
+    chi = _compute_ca_chirality(residue_list[index])
+    if chi is None:
+        return unknown
+    return str(chi > 0.0)
+
 # ---------------------------------------------------------------------------
 # Label dispatch registry
 # ---------------------------------------------------------------------------
@@ -261,5 +312,7 @@ LABEL_REGISTRY: dict[str, LabelFunc] = {
     'is_prepro':      label_is_prepro,
     'has_all_mc':     label_has_all_mc,
     'has_all_sc':     label_has_all_sc,
+    'is_left':        label_is_left,
+    'is_right':       label_is_right,
     'rama_category':  label_rama_category,
 }

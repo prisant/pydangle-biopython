@@ -5,6 +5,7 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
+- feat: add is_left/is_right chirality labels (ed73d64)
 - feat: add has_all_sc label for sidechain atom completeness (5cc303e)
 - feat: add residue classification labels and examples documentation (952e058)
 
