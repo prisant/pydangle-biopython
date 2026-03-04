@@ -170,19 +170,19 @@ class TestComputeMeasurement:
         # Tau should be roughly 100-120 degrees for standard protein geometry
         assert 80.0 < angle < 140.0
 
-    def test_chi1_alanine_is_unknown(self, hexapeptide_chain):
-        """ALA has CB but no CG/OG/SG → chi1 should be unknown."""
+    def test_chi1_glycine_is_unknown(self, hexapeptide_chain):
+        """GLY has no sidechain → chi1 should be unknown."""
         commands = command_string_parser("chi1")
         result = compute_measurement(
-            commands[0], hexapeptide_chain.child_list, 0, '__?__'
+            commands[0], hexapeptide_chain.child_list, 1, '__?__'
         )
         assert result == '__?__'
 
-    def test_chi1_glutamine(self, hexapeptide_chain):
-        """GLN (residue index 3) has CG → chi1 should be computable."""
+    def test_chi1_glutamate(self, hexapeptide_chain):
+        """GLU (residue index 0) has CG → chi1 should be computable."""
         commands = command_string_parser("chi1")
         result = compute_measurement(
-            commands[0], hexapeptide_chain.child_list, 3, '__?__'
+            commands[0], hexapeptide_chain.child_list, 0, '__?__'
         )
         assert result != '__?__'
         float(result)
@@ -242,7 +242,7 @@ class TestProcessMeasurementForResidue:
 class TestProcessMeasurementCommands:
     def test_protein_phi_psi(self, hexapeptide_structure):
         lines = process_measurement_commands(
-            "AGPQVS", hexapeptide_structure, "phi; psi"
+            "EGIPpd", hexapeptide_structure, "phi; psi"
         )
         # First line is the header comment
         assert lines[0].startswith('#')
@@ -251,7 +251,7 @@ class TestProcessMeasurementCommands:
 
     def test_protein_tau_phi_psi(self, hexapeptide_structure):
         lines = process_measurement_commands(
-            "AGPQVS", hexapeptide_structure, "tau; phi; psi"
+            "EGIPpd", hexapeptide_structure, "tau; phi; psi"
         )
         assert len(lines) > 1
         # Each data line should have colon-separated fields
@@ -261,7 +261,7 @@ class TestProcessMeasurementCommands:
 
     def test_protein_chi_values(self, hexapeptide_structure):
         lines = process_measurement_commands(
-            "AGPQVS", hexapeptide_structure, "chi1; chi2"
+            "EGIPpd", hexapeptide_structure, "chi1; chi2"
         )
         # Should have at least some valid chi values (e.g., for GLN, VAL, SER)
         data_lines = [line for line in lines if not line.startswith('#')]
@@ -269,7 +269,7 @@ class TestProcessMeasurementCommands:
 
     def test_protein_distances(self, hexapeptide_structure):
         lines = process_measurement_commands(
-            "AGPQVS", hexapeptide_structure, "vCAd; pbCACd"
+            "EGIPpd", hexapeptide_structure, "vCAd; pbCACd"
         )
         data_lines = [line for line in lines if not line.startswith('#')]
         assert len(data_lines) > 0
@@ -277,7 +277,7 @@ class TestProcessMeasurementCommands:
     def test_output_format_consistency(self, hexapeptide_structure):
         """All data lines should have the same number of fields."""
         lines = process_measurement_commands(
-            "AGPQVS", hexapeptide_structure, "tau; phi; psi"
+            "EGIPpd", hexapeptide_structure, "tau; phi; psi"
         )
         data_lines = [line for line in lines if not line.startswith('#')]
         if data_lines:
@@ -296,7 +296,7 @@ class TestProcessMeasurementCommands:
 
     def test_unknown_string_customizable(self, hexapeptide_structure):
         lines = process_measurement_commands(
-            "AGPQVS", hexapeptide_structure, "phi; psi",
+            "EGIPpd", hexapeptide_structure, "phi; psi",
             unknown_str="N/A"
         )
         # Should still produce output

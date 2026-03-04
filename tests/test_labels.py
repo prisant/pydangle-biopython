@@ -20,13 +20,13 @@ from pydangle_biopython.parser import command_string_parser
 
 UNK = "__?__"
 
-# Hexapeptide sequence (from conftest.py):
-#   index 0: ALA
+# Hexapeptide sequence (from conftest.py, ubiquitin 34-39):
+#   index 0: GLU
 #   index 1: GLY
-#   index 2: PRO
-#   index 3: GLN
-#   index 4: VAL
-#   index 5: SER
+#   index 2: ILE  (pre-proline)
+#   index 3: PRO
+#   index 4: PRO
+#   index 5: ASP
 
 
 class TestLabelRegistry:
@@ -111,37 +111,37 @@ class TestPrimitiveLabels:
         assert label_is_gly(residue_list, 1, UNK) == 'True'
 
     def test_is_gly_false(self, hexapeptide_chain):
-        """Index 0 is ALA, not GLY."""
+        """Index 0 is GLU, not GLY."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_is_gly(residue_list, 0, UNK) == 'False'
 
     def test_is_pro_true(self, hexapeptide_chain):
-        """Index 2 is PRO."""
+        """Index 3 is PRO."""
         residue_list = list(hexapeptide_chain.get_residues())
-        assert label_is_pro(residue_list, 2, UNK) == 'True'
+        assert label_is_pro(residue_list, 3, UNK) == 'True'
 
     def test_is_pro_false(self, hexapeptide_chain):
-        """Index 0 is ALA, not PRO."""
+        """Index 0 is GLU, not PRO."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_is_pro(residue_list, 0, UNK) == 'False'
 
     def test_is_ileval_true(self, hexapeptide_chain):
-        """Index 4 is VAL."""
+        """Index 2 is ILE."""
         residue_list = list(hexapeptide_chain.get_residues())
-        assert label_is_ileval(residue_list, 4, UNK) == 'True'
+        assert label_is_ileval(residue_list, 2, UNK) == 'True'
 
     def test_is_ileval_false(self, hexapeptide_chain):
-        """Index 0 is ALA, not ILE/VAL."""
+        """Index 0 is GLU, not ILE/VAL."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_is_ileval(residue_list, 0, UNK) == 'False'
 
     def test_is_prepro_true(self, hexapeptide_chain):
-        """Index 1 (GLY) precedes PRO at index 2."""
+        """Index 2 (ILE) precedes PRO at index 3."""
         residue_list = list(hexapeptide_chain.get_residues())
-        assert label_is_prepro(residue_list, 1, UNK) == 'True'
+        assert label_is_prepro(residue_list, 2, UNK) == 'True'
 
     def test_is_prepro_false(self, hexapeptide_chain):
-        """Index 0 (ALA) precedes GLY, not PRO."""
+        """Index 0 (GLU) precedes GLY, not PRO."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_is_prepro(residue_list, 0, UNK) == 'False'
 
@@ -177,29 +177,29 @@ class TestRamaCategory:
         assert label_rama_category(residue_list, 1, UNK) == 'Gly'
 
     def test_ileval_category(self, hexapeptide_chain):
-        """VAL at index 4 should be 'IleVal'."""
+        """ILE at index 2 should be 'IleVal'."""
         residue_list = list(hexapeptide_chain.get_residues())
-        assert label_rama_category(residue_list, 4, UNK) == 'IleVal'
+        assert label_rama_category(residue_list, 2, UNK) == 'IleVal'
 
     def test_transpro_category(self, hexapeptide_chain):
-        """PRO at index 2 should be 'TransPro'."""
+        """PRO at index 3 should be 'TransPro'."""
         residue_list = list(hexapeptide_chain.get_residues())
-        assert label_rama_category(residue_list, 2, UNK) == 'TransPro'
+        assert label_rama_category(residue_list, 3, UNK) == 'TransPro'
 
     def test_general_category(self, hexapeptide_chain):
-        """GLN at index 3 (not followed by PRO) should be 'General'."""
+        """ASP at index 5 (last, not followed by PRO) should be 'General'."""
         residue_list = list(hexapeptide_chain.get_residues())
-        assert label_rama_category(residue_list, 3, UNK) == 'General'
+        assert label_rama_category(residue_list, 5, UNK) == 'General'
 
-    def test_general_ala(self, hexapeptide_chain):
-        """ALA at index 0 (followed by GLY, not PRO) should be 'General'."""
+    def test_general_glu(self, hexapeptide_chain):
+        """GLU at index 0 (followed by GLY, not PRO) should be 'General'."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_rama_category(residue_list, 0, UNK) == 'General'
 
-    def test_general_ser(self, hexapeptide_chain):
-        """SER at index 5 (last residue) should be 'General'."""
+    def test_prepro_ile(self, hexapeptide_chain):
+        """ILE at index 2 is IleVal, not PrePro (IleVal takes priority)."""
         residue_list = list(hexapeptide_chain.get_residues())
-        assert label_rama_category(residue_list, 5, UNK) == 'General'
+        assert label_rama_category(residue_list, 2, UNK) == 'IleVal'
 
 
 class TestHasAllMc:
@@ -233,8 +233,8 @@ class TestHasAllMc:
 class TestHasAllSc:
     """Test sidechain atom completeness."""
 
-    def test_ala_complete(self, hexapeptide_chain):
-        """ALA (index 0) should have CB."""
+    def test_glu_complete(self, hexapeptide_chain):
+        """GLU (index 0) should have all sidechain atoms."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_has_all_sc(residue_list, 0, UNK) == 'True'
 
@@ -244,14 +244,14 @@ class TestHasAllSc:
         assert label_has_all_sc(residue_list, 1, UNK) == 'True'
 
     def test_pro_complete(self, hexapeptide_chain):
-        """PRO (index 2) should have CB, CG, CD."""
+        """PRO (index 3) should have CB, CG, CD."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_has_all_sc(residue_list, 3, UNK) == 'True'
+
+    def test_ile_complete(self, hexapeptide_chain):
+        """ILE (index 2) should have CB, CG1, CG2, CD1."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_has_all_sc(residue_list, 2, UNK) == 'True'
-
-    def test_val_complete(self, hexapeptide_chain):
-        """VAL (index 4) should have CB, CG1, CG2."""
-        residue_list = list(hexapeptide_chain.get_residues())
-        assert label_has_all_sc(residue_list, 4, UNK) == 'True'
 
     def test_has_all_sc_in_output(self, hexapeptide_structure):
         """has_all_sc should produce True/False values in output."""
