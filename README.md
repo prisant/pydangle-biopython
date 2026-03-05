@@ -4,8 +4,8 @@ Michael G. Prisant, Ph.D.
 Prisant Scientific
 info@prisantscientific.com
 
-Compute distances, angles, and dihedral angles in protein and nucleic acid
-structures.
+Compute distances, angles, dihedrals, and per-residue classifications
+in protein and nucleic acid structures.
 
 This package uses **BioPython** as the structure-parsing backend.
 Sibling packages `pydangle-cctbx` and `pydangle-gemmi` will provide the same
@@ -64,6 +64,12 @@ pydangle-biopython -c 'distance: Ca_Ca: i-1 _CA_, i _CA_' structure.pdb
 
 # Multiple input files
 pydangle-biopython -c 'phi; psi; omega' *.pdb
+
+# Residue classification labels
+pydangle-biopython -c 'phi; psi; rama_category; is_cis' structure.pdb
+
+# Mixed measurements, labels, and completeness checks
+pydangle-biopython -c 'phi; psi; rama_category; has_all_mc; has_all_sc' structure.pdb
 ```
 
 ## Output format
@@ -71,17 +77,52 @@ pydangle-biopython -c 'phi; psi; omega' *.pdb
 Output is colon-separated with one line per residue:
 
 ```
-filename:model:chain:number:ins:resname:phi:psi:omega
+filename:model:chain:number:ins:resname:measurement1:measurement2:...
 ```
 
 For example:
 
 ```
-1ubq.pdb:1:A:2: :GLN:-93.066:132.565:179.137
+1ubq.pdb:1:A:2: :GLN:-93.066:132.565:General:False
 ```
 
 Lines beginning with `#` are header comments.  Unknown or unmeasurable values
 are reported as `__?__`.
+
+## Measurement types
+
+Pydangle supports four types of per-residue output:
+
+**Geometric measurements** compute distances (Å), angles (°), and dihedral
+angles (°) from atom coordinates.  These can be specified as builtins
+(e.g. `phi`, `psi`, `chi1`) or with custom atom specifications
+(e.g. `distance: CaCa: i _CA_, i+1 _CA_`).
+
+**Residue classification labels** return categorical strings for each residue.
+Labels use a two-field syntax with no atom specifications
+(e.g. `rama_category`, `is_cis`).
+
+### Builtin labels
+
+`rama_category` assigns wwPDB Validation Task Force Ramachandran categories
+(Read et al., Structure 19:1395–1412, 2011): General, Gly, IleVal, TransPro,
+CisPro, or PrePro.
+
+`is_cis` / `is_trans` classify the peptide bond based on the omega dihedral
+angle (cis when |ω| < 30°).
+
+`is_gly`, `is_pro`, `is_ileval` identify residue type.  `is_prepro` flags
+residues immediately preceding proline.
+
+`has_all_mc` / `has_all_sc` check whether all expected mainchain (N, CA, C, O)
+or sidechain heavy atoms are present for each residue.
+
+`is_left` / `is_right` determine Cα chirality from the improper dihedral
+CB–N–C–CA (L-amino acids are negative, D-amino acids positive).  GLY returns
+unknown since it has no CB.
+
+See `examples/README.md` for the complete builtin reference table covering
+protein backbone, sidechain, nucleic acid, and label builtins.
 
 ## Differences from Java Dangle
 
@@ -128,6 +169,7 @@ make test-cov    # tests with coverage
 make lint        # ruff check
 make typecheck   # mypy strict
 make all         # lint + typecheck + test
+make clean       # remove build artifacts and editor backups
 make docs        # serve docs locally
 ```
 

@@ -5,7 +5,11 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- refactor: replace synthetic hexapeptide with real ubiquitin coordinates (f43b90d)
+- docs: update README with residue classification labels (eaf335a)
+
+## v0.3.0 — 2026-03-03
+
+- refactor: replace synthetic hexapeptide with real ubiquitin coordinates (f8699ef)
 - feat: add is_left/is_right chirality labels (83e4050)
 - feat: add has_all_sc label for sidechain atom completeness (5cc303e)
 - feat: add residue classification labels and examples documentation (952e058)
