@@ -21,25 +21,25 @@ from pydangle_biopython.builtins import BUILTIN_COMMANDS
 # Function key synonyms → canonical form
 # ---------------------------------------------------------------------------
 FUNCTION_KEY_MAP: dict[str, str] = {
-    'dis':      'distance',
-    'dist':     'distance',
-    'distance': 'distance',
-    'ang':      'angle',
-    'angl':     'angle',
-    'angle':    'angle',
-    'tor':      'dihedral',
-    'tors':     'dihedral',
-    'torsion':  'dihedral',
-    'dihedral': 'dihedral',
-    'label':    'label',
-    'lbl':      'label',
+    "dis": "distance",
+    "dist": "distance",
+    "distance": "distance",
+    "ang": "angle",
+    "angl": "angle",
+    "angle": "angle",
+    "tor": "dihedral",
+    "tors": "dihedral",
+    "torsion": "dihedral",
+    "dihedral": "dihedral",
+    "label": "label",
+    "lbl": "label",
 }
 
 # Expected argument counts per function type
 _EXPECTED_ARGS: dict[str, int] = {
-    'distance': 2,
-    'angle':    3,
-    'dihedral': 4,
+    "distance": 2,
+    "angle": 3,
+    "dihedral": 4,
     # 'label' has no atom arguments — handled separately
 }
 
@@ -54,6 +54,7 @@ ParsedCommand = tuple[str, str, list[ArgList]]
 # Low-level tokenisation helpers
 # ---------------------------------------------------------------------------
 
+
 def _tokenize(s: str, delimiter: str) -> list[str]:
     """Split string *s* on *delimiter* and strip whitespace from each token."""
     return [tok.strip() for tok in s.split(delimiter)]
@@ -62,6 +63,7 @@ def _tokenize(s: str, delimiter: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # Parsing stages
 # ---------------------------------------------------------------------------
+
 
 def expand_command_list(command_string: str) -> list[str]:
     """Stage 1 – split on semicolons and expand builtin names.
@@ -76,7 +78,7 @@ def expand_command_list(command_string: str) -> list[str]:
     list[str]
         List of expanded command strings.
     """
-    commands = _tokenize(command_string, ';')
+    commands = _tokenize(command_string, ";")
     expanded = []
     for cmd in commands:
         cmd = cmd.strip()
@@ -109,7 +111,7 @@ def parse_command_fields(command_string: str) -> tuple[str, str, str]:
         If the command does not have exactly three colon-separated fields
         or if the function key is unrecognised.
     """
-    fields = _tokenize(command_string, ':')
+    fields = _tokenize(command_string, ":")
     if len(fields) == 2:
         # Label commands: "label: name" (no atom args)
         raw_key, label = fields
@@ -117,12 +119,12 @@ def parse_command_fields(command_string: str) -> tuple[str, str, str]:
         if raw_key_lower not in FUNCTION_KEY_MAP:
             raise ValueError(f"Unknown function key: {raw_key!r}")
         canonical = FUNCTION_KEY_MAP[raw_key_lower]
-        if canonical != 'label':
+        if canonical != "label":
             raise ValueError(
                 f"Two-field command requires 'label' function type, "
                 f"got {raw_key!r}: {command_string!r}"
             )
-        return 'label', label.strip(), ''
+        return "label", label.strip(), ""
     if len(fields) != 3:
         raise ValueError(
             f"Expected 2 or 3 colon-separated fields, got {len(fields)}: "
@@ -149,7 +151,7 @@ def parse_alternative_arg_lists(arg_string: str) -> list[str]:
     -------
     list[str]
     """
-    return [s for s in _tokenize(arg_string, '|') if s]
+    return [s for s in _tokenize(arg_string, "|") if s]
 
 
 def parse_atom_list(function_key: str, arg_list_string: str) -> list[str]:
@@ -170,7 +172,7 @@ def parse_atom_list(function_key: str, arg_list_string: str) -> list[str]:
     ValueError
         If the number of atoms does not match the function type.
     """
-    atoms = [s for s in _tokenize(arg_list_string, ',') if s]
+    atoms = [s for s in _tokenize(arg_list_string, ",") if s]
     expected = _EXPECTED_ARGS.get(function_key)
     if expected is not None and len(atoms) != expected:
         raise ValueError(
@@ -200,7 +202,7 @@ def parse_atom_position(atom_pos_string: str) -> AtomPos:
     parts = atom_pos_string.split()
     if len(parts) == 1:
         # No explicit offset → default to i (offset 0)
-        offset_str = 'i+0'
+        offset_str = "i+0"
         name_str = parts[0]
     elif len(parts) == 2:
         offset_str = parts[0]
@@ -213,7 +215,7 @@ def parse_atom_position(atom_pos_string: str) -> AtomPos:
 
     # Parse offset: "i" → 0, "i+1" → 1, "i-2" → -2
     offset_str = offset_str.strip()
-    if offset_str == 'i':
+    if offset_str == "i":
         offset = 0
     else:
         # Remove the leading 'i'
@@ -221,16 +223,14 @@ def parse_atom_position(atom_pos_string: str) -> AtomPos:
         try:
             offset = int(offset_tail)
         except ValueError:
-            raise ValueError(
-                f"Cannot parse residue offset: {offset_str!r}"
-            ) from None
+            raise ValueError(f"Cannot parse residue offset: {offset_str!r}") from None
 
     # Parse atom name: strip slashes for regex, replace _ with space
-    name_str = name_str.strip('/')
+    name_str = name_str.strip("/")
     # Replace * with [*'] to match both conventions in nucleic acids
-    name_str = name_str.replace('*', "[*']")
-    name_str = name_str.replace('_', ' ')
-    regex = re.compile('^' + name_str + '$')
+    name_str = name_str.replace("*", "[*']")
+    name_str = name_str.replace("_", " ")
+    regex = re.compile("^" + name_str + "$")
 
     return offset, regex
 
@@ -238,6 +238,7 @@ def parse_atom_position(atom_pos_string: str) -> AtomPos:
 # ---------------------------------------------------------------------------
 # Top-level parser
 # ---------------------------------------------------------------------------
+
 
 def command_string_parser(command_string: str) -> list[ParsedCommand]:
     """Parse a full command string into structured measurement specifications.
@@ -261,7 +262,7 @@ def command_string_parser(command_string: str) -> list[ParsedCommand]:
     parsed_commands: list[ParsedCommand] = []
     for cmd_str in expand_command_list(command_string):
         fun_key, label, arg_str = parse_command_fields(cmd_str)
-        if fun_key == 'label':
+        if fun_key == "label":
             # Label commands have no atom arguments
             parsed_commands.append((fun_key, label, []))
             continue

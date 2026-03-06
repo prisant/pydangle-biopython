@@ -31,6 +31,9 @@ make install
 After installation, the `pydangle-biopython` command is available:
 
 ```bash
+# Show version
+pydangle-biopython --version
+
 # Default measurements (phi, psi, chi1–chi4)
 pydangle-biopython structure.pdb
 

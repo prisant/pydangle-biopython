@@ -17,33 +17,35 @@ from pydangle_biopython.parser import (
 # _tokenize
 # ---------------------------------------------------------------------------
 
+
 class TestTokenize:
     def test_semicolon_split(self):
-        result = _tokenize("phi; psi; omega", ';')
-        assert result == ['phi', 'psi', 'omega']
+        result = _tokenize("phi; psi; omega", ";")
+        assert result == ["phi", "psi", "omega"]
 
     def test_colon_split(self):
-        result = _tokenize("dihedral: phi: i-1 _C__, i _N__", ':')
-        assert result == ['dihedral', 'phi', 'i-1 _C__, i _N__']
+        result = _tokenize("dihedral: phi: i-1 _C__, i _N__", ":")
+        assert result == ["dihedral", "phi", "i-1 _C__, i _N__"]
 
     def test_strips_whitespace(self):
-        result = _tokenize("  a  ;  b  ;  c  ", ';')
-        assert result == ['a', 'b', 'c']
+        result = _tokenize("  a  ;  b  ;  c  ", ";")
+        assert result == ["a", "b", "c"]
 
     def test_single_token(self):
-        result = _tokenize("phi", ';')
-        assert result == ['phi']
+        result = _tokenize("phi", ";")
+        assert result == ["phi"]
 
 
 # ---------------------------------------------------------------------------
 # expand_command_list
 # ---------------------------------------------------------------------------
 
+
 class TestExpandCommandList:
     def test_builtin_expansion(self):
         result = expand_command_list("phi")
         assert len(result) == 1
-        assert 'dihedral' in result[0].lower()
+        assert "dihedral" in result[0].lower()
 
     def test_multiple_builtins(self):
         result = expand_command_list("phi; psi; omega")
@@ -57,8 +59,8 @@ class TestExpandCommandList:
     def test_mixed_builtin_and_custom(self):
         result = expand_command_list("phi; distance: myDist: i _CA_, i+1 _CA_")
         assert len(result) == 2
-        assert 'dihedral' in result[0].lower()
-        assert 'myDist' in result[1]
+        assert "dihedral" in result[0].lower()
+        assert "myDist" in result[1]
 
     def test_empty_tokens_skipped(self):
         result = expand_command_list("phi; ; psi")
@@ -69,12 +71,21 @@ class TestExpandCommandList:
         for name in BUILTIN_COMMANDS:
             result = expand_command_list(name)
             assert len(result) == 1
-            assert ':' in result[0], f"Builtin {name!r} did not expand properly"
+            assert ":" in result[0], f"Builtin {name!r} did not expand properly"
 
     def test_nucleic_acid_builtins_present(self):
         """Key nucleic acid builtins should be present."""
-        for name in ('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta',
-                     'eta', 'theta', 'chi_na'):
+        for name in (
+            "alpha",
+            "beta",
+            "gamma",
+            "delta",
+            "epsilon",
+            "zeta",
+            "eta",
+            "theta",
+            "chi_na",
+        ):
             assert name in BUILTIN_COMMANDS, f"Missing nucleic acid builtin: {name}"
 
 
@@ -82,28 +93,29 @@ class TestExpandCommandList:
 # parse_command_fields
 # ---------------------------------------------------------------------------
 
+
 class TestParseCommandFields:
     def test_standard_command(self):
         key, label, args = parse_command_fields(
             "dihedral: phi: i-1 _C__, i _N__, i _CA_, i _C__"
         )
-        assert key == 'dihedral'
-        assert label == 'phi'
-        assert '_C__' in args
+        assert key == "dihedral"
+        assert label == "phi"
+        assert "_C__" in args
 
     def test_synonym_keys(self):
-        for syn in ('tor', 'tors', 'torsion', 'dihedral'):
+        for syn in ("tor", "tors", "torsion", "dihedral"):
             cmd = f"{syn}: test: i _N__, i _CA_, i _CB_, i _CG_"
             key, _, _ = parse_command_fields(cmd)
-            assert key == 'dihedral'
+            assert key == "dihedral"
 
-        for syn in ('dis', 'dist', 'distance'):
+        for syn in ("dis", "dist", "distance"):
             key, _, _ = parse_command_fields(f"{syn}: test: i _CA_, i+1 _CA_")
-            assert key == 'distance'
+            assert key == "distance"
 
-        for syn in ('ang', 'angl', 'angle'):
+        for syn in ("ang", "angl", "angle"):
             key, _, _ = parse_command_fields(f"{syn}: test: i _N__, i _CA_, i _C__")
-            assert key == 'angle'
+            assert key == "angle"
 
     def test_invalid_key_raises(self):
         with pytest.raises(ValueError, match="Unknown function key"):
@@ -118,6 +130,7 @@ class TestParseCommandFields:
 # parse_alternative_arg_lists
 # ---------------------------------------------------------------------------
 
+
 class TestParseAlternativeArgLists:
     def test_single_list(self):
         result = parse_alternative_arg_lists("i _N__, i _CA_, i _CB_, i _CG_")
@@ -128,35 +141,37 @@ class TestParseAlternativeArgLists:
             "i _O4*, i _C1*, i _N9_, i _C4_ | i _O4*, i _C1*, i _N1_, i _C2_"
         )
         assert len(result) == 2
-        assert '_N9_' in result[0]
-        assert '_N1_' in result[1]
+        assert "_N9_" in result[0]
+        assert "_N1_" in result[1]
 
 
 # ---------------------------------------------------------------------------
 # parse_atom_list
 # ---------------------------------------------------------------------------
 
+
 class TestParseAtomList:
     def test_distance_two_atoms(self):
-        result = parse_atom_list('distance', "i _CA_, i+1 _CA_")
+        result = parse_atom_list("distance", "i _CA_, i+1 _CA_")
         assert len(result) == 2
 
     def test_angle_three_atoms(self):
-        result = parse_atom_list('angle', "i _N__, i _CA_, i _C__")
+        result = parse_atom_list("angle", "i _N__, i _CA_, i _C__")
         assert len(result) == 3
 
     def test_dihedral_four_atoms(self):
-        result = parse_atom_list('dihedral', "i-1 _C__, i _N__, i _CA_, i _C__")
+        result = parse_atom_list("dihedral", "i-1 _C__, i _N__, i _CA_, i _C__")
         assert len(result) == 4
 
     def test_wrong_count_raises(self):
         with pytest.raises(ValueError, match="requires 4 atoms"):
-            parse_atom_list('dihedral', "i _N__, i _CA_")
+            parse_atom_list("dihedral", "i _N__, i _CA_")
 
 
 # ---------------------------------------------------------------------------
 # parse_atom_position
 # ---------------------------------------------------------------------------
+
 
 class TestParseAtomPosition:
     def test_explicit_offset_zero(self):
@@ -209,26 +224,27 @@ class TestParseAtomPosition:
 # command_string_parser (integration)
 # ---------------------------------------------------------------------------
 
+
 class TestCommandStringParser:
     def test_single_builtin(self):
         result = command_string_parser("phi")
         assert len(result) == 1
         fun_key, label, arg_lists = result[0]
-        assert fun_key == 'dihedral'
-        assert label == 'phi'
-        assert len(arg_lists) == 1      # one alternative
-        assert len(arg_lists[0]) == 4   # four atoms for dihedral
+        assert fun_key == "dihedral"
+        assert label == "phi"
+        assert len(arg_lists) == 1  # one alternative
+        assert len(arg_lists[0]) == 4  # four atoms for dihedral
 
     def test_multiple_builtins(self):
         result = command_string_parser("phi; psi; omega")
         assert len(result) == 3
         labels = [cmd[1] for cmd in result]
-        assert labels == ['phi', 'psi', 'omega']
+        assert labels == ["phi", "psi", "omega"]
 
     def test_custom_distance(self):
         result = command_string_parser("distance: myDist: i-1 _CA_, i _CA_")
         assert len(result) == 1
-        assert result[0][0] == 'distance'
+        assert result[0][0] == "distance"
         assert len(result[0][2][0]) == 2
 
     def test_alternative_arg_lists(self):
@@ -236,7 +252,7 @@ class TestCommandStringParser:
         result = command_string_parser("chi_na")
         assert len(result) == 1
         fun_key, label, arg_lists = result[0]
-        assert fun_key == 'dihedral'
+        assert fun_key == "dihedral"
         assert len(arg_lists) == 2  # two alternatives
 
     def test_all_builtins_parse(self):

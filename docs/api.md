@@ -125,7 +125,9 @@ line, or `None` if no measurements were computable.
 def main(argv: list[str] | None = None) -> int
 ```
 
-CLI entry point.  Parses command-line arguments and runs measurements.
+CLI entry point. Parses command-line arguments and runs measurements.
+Supports `-V`/`--version` to print the current version. Pass `argv`
+explicitly for testing; defaults to `sys.argv[1:]`.
 
 ---
 

@@ -20,6 +20,7 @@ from pydangle_biopython.parser import ParsedCommand, command_string_parser
 # Formatting helpers
 # ---------------------------------------------------------------------------
 
+
 def angle_to_string(radians: float) -> str:
     """Convert angle from radians to a formatted degree string.
 
@@ -34,7 +35,7 @@ def angle_to_string(radians: float) -> str:
         Angle in degrees, formatted to 3 decimal places with trailing
         zeros stripped.
     """
-    return f"{math.degrees(radians):.3f}".rstrip('0').rstrip('.')
+    return f"{math.degrees(radians):.3f}".rstrip("0").rstrip(".")
 
 
 def number_to_string(number: float) -> str:
@@ -49,12 +50,13 @@ def number_to_string(number: float) -> str:
     str
         Number formatted to 3 decimal places with trailing zeros stripped.
     """
-    return f"{number:.3f}".rstrip('0').rstrip('.')
+    return f"{number:.3f}".rstrip("0").rstrip(".")
 
 
 # ---------------------------------------------------------------------------
 # Geometry helpers
 # ---------------------------------------------------------------------------
+
 
 def calc_dist(v1: Any, v2: Any) -> float:
     """Compute the Euclidean distance between two BioPython Vector objects.
@@ -101,6 +103,7 @@ def _add_jitter(cartesian_vector: Any, jitter_range: float = 0.0001) -> Any:
 # Calculation dispatch
 # ---------------------------------------------------------------------------
 
+
 def calc_wrapper(function_key: str, args: list[Any], unknown_str: str) -> str:
     """Dispatch a geometry calculation based on the function key.
 
@@ -125,19 +128,24 @@ def calc_wrapper(function_key: str, args: list[Any], unknown_str: str) -> str:
 
     n = len(args)
     try:
-        if function_key == 'dihedral' and n == 4:
+        if function_key == "dihedral" and n == 4:
             return angle_to_string(
                 calc_dihedral(  # type: ignore[no-untyped-call]
-                    args[0], args[1], args[2], args[3],
+                    args[0],
+                    args[1],
+                    args[2],
+                    args[3],
                 )
             )
-        elif function_key == 'angle' and n == 3:
+        elif function_key == "angle" and n == 3:
             return angle_to_string(
                 calc_angle(  # type: ignore[no-untyped-call]
-                    args[0], args[1], args[2],
+                    args[0],
+                    args[1],
+                    args[2],
                 )
             )
-        elif function_key == 'distance' and n == 2:
+        elif function_key == "distance" and n == 2:
             return number_to_string(calc_dist(args[0], args[1]))
     except Exception:
         # Degenerate geometry, missing atoms, etc.
@@ -149,6 +157,7 @@ def calc_wrapper(function_key: str, args: list[Any], unknown_str: str) -> str:
 # ---------------------------------------------------------------------------
 # Per-residue measurement
 # ---------------------------------------------------------------------------
+
 
 def compute_measurement(
     command: ParsedCommand,
@@ -179,7 +188,7 @@ def compute_measurement(
     function_key = command[0]
 
     # Label commands: dispatch to registered label function
-    if function_key == 'label':
+    if function_key == "label":
         label_name = command[1]
         label_func = LABEL_REGISTRY.get(label_name)
         if label_func is not None:
@@ -218,40 +227,135 @@ def compute_measurement(
 
 # Protein residue names accepted by Java Dangle's isProtOrNucAcid().
 # Includes the 20 standard amino acids plus common modified residues.
-_PROTEIN_NAMES: frozenset[str] = frozenset({
-    # 20 standard amino acids
-    'GLY', 'ALA', 'VAL', 'PHE', 'PRO', 'MET', 'ILE', 'LEU',
-    'ASP', 'GLU', 'LYS', 'ARG', 'SER', 'THR', 'TYR', 'HIS',
-    'CYS', 'ASN', 'GLN', 'TRP',
-    # Ambiguous / modified
-    'ASX', 'GLX',           # ambiguous Asp/Asn, Glu/Gln
-    'ACE', 'FOR',           # acetyl, formyl caps
-    'NH2', 'NME',           # amide caps
-    'MSE',                  # selenomethionine
-    'AIB', 'ABU',           # alpha-aminoisobutyric, alpha-aminobutyric acid
-    'PCA',                  # pyroglutamic acid
-    'MLY', 'M3L',           # methylated lysines
-    'CYO', 'CSD',           # oxidized cysteine, cysteine sulfonic acid
-    'DGN',                  # diaminoglutaric acid
-})
+_PROTEIN_NAMES: frozenset[str] = frozenset(
+    {
+        # 20 standard amino acids
+        "GLY",
+        "ALA",
+        "VAL",
+        "PHE",
+        "PRO",
+        "MET",
+        "ILE",
+        "LEU",
+        "ASP",
+        "GLU",
+        "LYS",
+        "ARG",
+        "SER",
+        "THR",
+        "TYR",
+        "HIS",
+        "CYS",
+        "ASN",
+        "GLN",
+        "TRP",
+        # Ambiguous / modified
+        "ASX",
+        "GLX",  # ambiguous Asp/Asn, Glu/Gln
+        "ACE",
+        "FOR",  # acetyl, formyl caps
+        "NH2",
+        "NME",  # amide caps
+        "MSE",  # selenomethionine
+        "AIB",
+        "ABU",  # alpha-aminoisobutyric, alpha-aminobutyric acid
+        "PCA",  # pyroglutamic acid
+        "MLY",
+        "M3L",  # methylated lysines
+        "CYO",
+        "CSD",  # oxidized cysteine, cysteine sulfonic acid
+        "DGN",  # diaminoglutaric acid
+    }
+)
 
 # Nucleic acid residue names accepted by Java Dangle's isProtOrNucAcid().
-_NUCLEIC_ACID_NAMES: frozenset[str] = frozenset({
-    '  C', '  G', '  A', '  T', '  U',
-    'CYT', 'GUA', 'ADE', 'THY', 'URA', 'URI',
-    'GSP', 'H2U', 'PSU', '4SU', '1MG', '2MG', 'M2G',
-    '5MC', '5MU', 'T6A', '1MA', 'RIA', 'OMC', 'OMG',
-    ' YG', '  I', '7MG', 'YYG', 'YG ', 'A2M', '5FU',
-    'G7M', 'OMU', 'PR5', 'FHU', 'XUG', 'A23', 'UMS',
-    'FMU', 'UR3', 'CFL', 'UD5', 'CSL', 'UFT', '5IC',
-    '5BU', 'BGM', 'CBR', 'U34', 'CCC', 'AVC', 'TM2',
-    'AET', ' IU',
-    'C  ', 'G  ', 'A  ', 'T  ', 'U  ', 'I  ',
-    'C', 'G', 'A', 'T', 'U', 'I',
-    ' rC', ' rG', ' rA', ' rT', ' rU',
-    ' dC', ' dG', ' dA', ' dT', ' dU',
-    ' DC', ' DG', ' DA', ' DT', ' DU',
-})
+_NUCLEIC_ACID_NAMES: frozenset[str] = frozenset(
+    {
+        "  C",
+        "  G",
+        "  A",
+        "  T",
+        "  U",
+        "CYT",
+        "GUA",
+        "ADE",
+        "THY",
+        "URA",
+        "URI",
+        "GSP",
+        "H2U",
+        "PSU",
+        "4SU",
+        "1MG",
+        "2MG",
+        "M2G",
+        "5MC",
+        "5MU",
+        "T6A",
+        "1MA",
+        "RIA",
+        "OMC",
+        "OMG",
+        " YG",
+        "  I",
+        "7MG",
+        "YYG",
+        "YG ",
+        "A2M",
+        "5FU",
+        "G7M",
+        "OMU",
+        "PR5",
+        "FHU",
+        "XUG",
+        "A23",
+        "UMS",
+        "FMU",
+        "UR3",
+        "CFL",
+        "UD5",
+        "CSL",
+        "UFT",
+        "5IC",
+        "5BU",
+        "BGM",
+        "CBR",
+        "U34",
+        "CCC",
+        "AVC",
+        "TM2",
+        "AET",
+        " IU",
+        "C  ",
+        "G  ",
+        "A  ",
+        "T  ",
+        "U  ",
+        "I  ",
+        "C",
+        "G",
+        "A",
+        "T",
+        "U",
+        "I",
+        " rC",
+        " rG",
+        " rA",
+        " rT",
+        " rU",
+        " dC",
+        " dG",
+        " dA",
+        " dT",
+        " dU",
+        " DC",
+        " DG",
+        " DA",
+        " DT",
+        " DU",
+    }
+)
 
 
 def _is_polymer_residue(residue: Any) -> bool:
@@ -267,6 +371,7 @@ def _is_polymer_residue(residue: Any) -> bool:
 # ---------------------------------------------------------------------------
 # Formatting helpers for output lines
 # ---------------------------------------------------------------------------
+
 
 def _format_residue_id(residue: Any) -> str:
     """Format a residue identifier string.
@@ -286,6 +391,7 @@ def _format_residue_id(residue: Any) -> str:
 # ---------------------------------------------------------------------------
 # Polypeptide fragment builder
 # ---------------------------------------------------------------------------
+
 
 def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
     """Split a model into contiguous polypeptide fragments.
@@ -310,14 +416,13 @@ def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
     fragments: list[tuple[str, list[Any]]] = []
     for chain in model:
         pp_list = ppb.build_peptides(  # type: ignore[no-untyped-call]
-            chain, aa_only=0,
+            chain,
+            aa_only=0,
         )
         if pp_list:
             for pp in pp_list:
                 # Filter fragment to only keep whitelisted residues
-                residue_list = [
-                    r for r in pp if _is_polymer_residue(r)
-                ]
+                residue_list = [r for r in pp if _is_polymer_residue(r)]
                 if residue_list:
                     fragments.append((chain.id, residue_list))
         else:
@@ -332,6 +437,7 @@ def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
 # ---------------------------------------------------------------------------
 # Top-level processing
 # ---------------------------------------------------------------------------
+
 
 def process_measurement_for_residue(
     label: str,
@@ -368,7 +474,10 @@ def process_measurement_for_residue(
 
     for command in command_list:
         result = compute_measurement(
-            command, residue_list, residue_index, unknown_str,
+            command,
+            residue_list,
+            residue_index,
+            unknown_str,
         )
         if result != unknown_str:
             hit_count += 1
@@ -415,8 +524,11 @@ def process_measurement_commands(
             chain_str = model_str + str(chain_id) + ":"
             for i in range(len(residue_list)):
                 line = process_measurement_for_residue(
-                    chain_str, residue_list, i,
-                    command_list, unknown_str,
+                    chain_str,
+                    residue_list,
+                    i,
+                    command_list,
+                    unknown_str,
                 )
                 if line is not None:
                     output_lines.append(line)

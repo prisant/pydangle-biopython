@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- docs: update README with residue classification labels (eaf335a)
+- fix: add --version flag, fix email typo in README (8c0d634)
+- docs: update README with residue classification labels (5e8632b)
 
 ## v0.3.0 — 2026-03-03
 

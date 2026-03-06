@@ -2,7 +2,7 @@
 
 Michael G. Prisant, Ph.D.
 Prisant Scientific
-info@prisantscientific.com
+info@prisantscientific.org
 
 Compute distances, angles, dihedrals, and per-residue classifications
 in protein and nucleic acid structures.

@@ -99,27 +99,28 @@ END
 # Pytest fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def hexapeptide_structure():
     """Return a BioPython Structure for the ubiquitin hexapeptide."""
     parser = PDBParser(QUIET=True)
-    return parser.get_structure('EGIPpd', io.StringIO(HEXAPEPTIDE_PDB))
+    return parser.get_structure("EGIPpd", io.StringIO(HEXAPEPTIDE_PDB))
 
 
 @pytest.fixture
 def hexapeptide_chain(hexapeptide_structure):
     """Return chain A from the hexapeptide structure."""
-    return hexapeptide_structure[0]['A']
+    return hexapeptide_structure[0]["A"]
 
 
 @pytest.fixture
 def rna_structure():
     """Return a BioPython Structure for the RNA dinucleotide."""
     parser = PDBParser(QUIET=True)
-    return parser.get_structure('RNA', io.StringIO(RNA_DINUCLEOTIDE_PDB))
+    return parser.get_structure("RNA", io.StringIO(RNA_DINUCLEOTIDE_PDB))
 
 
 @pytest.fixture
 def rna_chain(rna_structure):
     """Return chain A from the RNA structure."""
-    return rna_structure[0]['A']
+    return rna_structure[0]["A"]

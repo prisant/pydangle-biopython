@@ -19,54 +19,54 @@ structural data it needs internally.
 # ---------------------------------------------------------------------------
 PROTEIN_BACKBONE = {
     # Backbone bond distances
-    'pbCACAd': "distance: pbCACAd: i _CA_, i+1 _CA_",
-    'pbCACd':  "distance: pbCACd:  i _CA_, i _C__",
-    'pbCOd':   "distance: pbCOd:   i _C__, i _O__",
-    'pbCNd':   "distance: pbCNd:   i _C__, i+1 _N__",
-    'pbNCAd':  "distance: pbNCAd:  i _N__, i _CA_",
+    "pbCACAd": "distance: pbCACAd: i _CA_, i+1 _CA_",
+    "pbCACd": "distance: pbCACd:  i _CA_, i _C__",
+    "pbCOd": "distance: pbCOd:   i _C__, i _O__",
+    "pbCNd": "distance: pbCNd:   i _C__, i+1 _N__",
+    "pbNCAd": "distance: pbNCAd:  i _N__, i _CA_",
     # Backbone bond angles
-    'pbCACOa': "angle: pbCACOa: i _CA_, i _C__, i _O__",
-    'pbCACNa': "angle: pbCACNa: i _CA_, i _C__, i+1 _N__",
-    'pbOCNa':  "angle: pbOCNa:  i _O__, i _C__, i+1 _N__",
-    'pbCNCAa': "angle: pbCNCAa: i _C__, i+1 _N__, i+1 _CA_",
-    'pbNCAC':  "angle: tau:     i _N__,   i _CA_, i _C__",
-    'tau':     "angle: tau:   i _N__,   i _CA_, i _C__",
+    "pbCACOa": "angle: pbCACOa: i _CA_, i _C__, i _O__",
+    "pbCACNa": "angle: pbCACNa: i _CA_, i _C__, i+1 _N__",
+    "pbOCNa": "angle: pbOCNa:  i _O__, i _C__, i+1 _N__",
+    "pbCNCAa": "angle: pbCNCAa: i _C__, i+1 _N__, i+1 _CA_",
+    "pbNCAC": "angle: tau:     i _N__,   i _CA_, i _C__",
+    "tau": "angle: tau:   i _N__,   i _CA_, i _C__",
     # Virtual Cα measurements
-    'vCAd': "distance: vCAd: i-1 _CA_, i _CA_",
-    'vCAa': "angle:    vCAa: i-1 _CA_, i _CA_, i+1 _CA_",
-    'vCAt': "dihedral: vCAt: i-1 _CA_, i _CA_, i+1 _CA_, i+2 _CA_",
+    "vCAd": "distance: vCAd: i-1 _CA_, i _CA_",
+    "vCAa": "angle:    vCAa: i-1 _CA_, i _CA_, i+1 _CA_",
+    "vCAt": "dihedral: vCAt: i-1 _CA_, i _CA_, i+1 _CA_, i+2 _CA_",
 }
 
 # ---------------------------------------------------------------------------
 # Protein backbone dihedral angles
 # ---------------------------------------------------------------------------
 PROTEIN_DIHEDRALS = {
-    'phi':   "dihedral: phi:   i-1 _C__, i _N__, i _CA_, i _C__",
-    'psi':   "dihedral: psi:   i _N__,   i _CA_, i _C__, i+1 _N__",
-    'omega': "dihedral: omega: i-1 _CA_, i-1 _C__, i _N__,  i _CA_",
+    "phi": "dihedral: phi:   i-1 _C__, i _N__, i _CA_, i _C__",
+    "psi": "dihedral: psi:   i _N__,   i _CA_, i _C__, i+1 _N__",
+    "omega": "dihedral: omega: i-1 _CA_, i-1 _C__, i _N__,  i _CA_",
 }
 
 # ---------------------------------------------------------------------------
 # Protein sidechain measurements
 # ---------------------------------------------------------------------------
 PROTEIN_SIDECHAIN = {
-    'chi1':  "dihedral: chi1:  i _N__,   i _CA_, i _CB_, i /_[ACNOS]G[_1]/",
-    'chi2':  "dihedral: chi2:  i _CA_,   i _CB_, i /_[ACNOS]G[_1]/, i /_[ACNOS]D[_1]/",
-    'chi3': (
+    "chi1": "dihedral: chi1:  i _N__,   i _CA_, i _CB_, i /_[ACNOS]G[_1]/",
+    "chi2": "dihedral: chi2:  i _CA_,   i _CB_, i /_[ACNOS]G[_1]/, i /_[ACNOS]D[_1]/",
+    "chi3": (
         "dihedral: chi3:"
         " i _CB_, i /_[ACNOS]G[_1]/,"
         " i /_[ACNOS]D[_1]/, i /_[ACNOS]E[_1]/"
         " | i _CB_, i _CG_, i _CD_, i _N__"
     ),
-    'chi4': (
+    "chi4": (
         "dihedral: chi4:"
         " i /_[ACNOS]G[_1]/, i /_[ACNOS]D[_1]/,"
         " i /_[ACNOS]E[_1]/, i /_[ACNOS]Z[_1]/"
     ),
-    'scABG': "angle:    scABG: i _CA_,   i _CB_, i /_[ACNOS]G[_1]/",
-    'scBGD': "angle:    scBGD: i _CB_,   i /_[ACNOS]G[_1]/, i /_[ACNOS]D[_1]/",
-    'scGDE': "angle:    scGDE: i /_[ACNOS]G[_1]/, i /_[ACNOS]D[_1]/, i /_[ACNOS]E[_1]/",
-    'scDEZ': "angle:    scDEZ: i /_[ACNOS]D[_1]/, i /_[ACNOS]E[_1]/, i /_[ACNOS]Z[_1]/",
+    "scABG": "angle:    scABG: i _CA_,   i _CB_, i /_[ACNOS]G[_1]/",
+    "scBGD": "angle:    scBGD: i _CB_,   i /_[ACNOS]G[_1]/, i /_[ACNOS]D[_1]/",
+    "scGDE": "angle:    scGDE: i /_[ACNOS]G[_1]/, i /_[ACNOS]D[_1]/, i /_[ACNOS]E[_1]/",
+    "scDEZ": "angle:    scDEZ: i /_[ACNOS]D[_1]/, i /_[ACNOS]E[_1]/, i /_[ACNOS]Z[_1]/",
 }
 
 # ---------------------------------------------------------------------------
@@ -92,20 +92,18 @@ PROTEIN_SIDECHAIN = {
 # Both conventions (* and ') are matched by the regex patterns.
 # ---------------------------------------------------------------------------
 NUCLEIC_ACID_BACKBONE = {
-    'alpha':   "dihedral: alpha:   i-1 _O3*, i _P__, i _O5*, i _C5*",
-    'beta':    "dihedral: beta:    i _P__,   i _O5*, i _C5*, i _C4*",
-    'gamma':   "dihedral: gamma:   i _O5*,   i _C5*, i _C4*, i _C3*",
-    'delta':   "dihedral: delta:   i _C5*,   i _C4*, i _C3*, i _O3*",
-    'epsilon': "dihedral: epsilon: i _C4*,   i _C3*, i _O3*, i+1 _P__",
-    'zeta':    "dihedral: zeta:    i _C3*,   i _O3*, i+1 _P__, i+1 _O5*",
+    "alpha": "dihedral: alpha:   i-1 _O3*, i _P__, i _O5*, i _C5*",
+    "beta": "dihedral: beta:    i _P__,   i _O5*, i _C5*, i _C4*",
+    "gamma": "dihedral: gamma:   i _O5*,   i _C5*, i _C4*, i _C3*",
+    "delta": "dihedral: delta:   i _C5*,   i _C4*, i _C3*, i _O3*",
+    "epsilon": "dihedral: epsilon: i _C4*,   i _C3*, i _O3*, i+1 _P__",
+    "zeta": "dihedral: zeta:    i _C3*,   i _O3*, i+1 _P__, i+1 _O5*",
     # Pseudotorsion angles
-    'eta':     "dihedral: eta:     i-1 _C4*, i _P__, i _C4*, i+1 _P__",
-    'theta':   "dihedral: theta:   i _P__,   i _C4*, i+1 _P__, i+1 _C4*",
+    "eta": "dihedral: eta:     i-1 _C4*, i _P__, i _C4*, i+1 _P__",
+    "theta": "dihedral: theta:   i _P__,   i _C4*, i+1 _P__, i+1 _C4*",
     # Glycosidic torsion: use | (or) to handle purines and pyrimidines
-    'chi_na': (
-        "dihedral: chi:"
-        " i _O4*, i _C1*, i _N9_, i _C4_"
-        " | i _O4*, i _C1*, i _N1_, i _C2_"
+    "chi_na": (
+        "dihedral: chi: i _O4*, i _C1*, i _N9_, i _C4_ | i _O4*, i _C1*, i _N1_, i _C2_"
     ),
 }
 
@@ -114,11 +112,11 @@ NUCLEIC_ACID_BACKBONE = {
 # ---------------------------------------------------------------------------
 NUCLEIC_ACID_ANGLES = {
     # Sugar pucker pseudo-rotation related
-    'nu0': "dihedral: nu0: i _C4*, i _O4*, i _C1*, i _C2*",
-    'nu1': "dihedral: nu1: i _O4*, i _C1*, i _C2*, i _C3*",
-    'nu2': "dihedral: nu2: i _C1*, i _C2*, i _C3*, i _C4*",
-    'nu3': "dihedral: nu3: i _C2*, i _C3*, i _C4*, i _O4*",
-    'nu4': "dihedral: nu4: i _C3*, i _C4*, i _O4*, i _C1*",
+    "nu0": "dihedral: nu0: i _C4*, i _O4*, i _C1*, i _C2*",
+    "nu1": "dihedral: nu1: i _O4*, i _C1*, i _C2*, i _C3*",
+    "nu2": "dihedral: nu2: i _C1*, i _C2*, i _C3*, i _C4*",
+    "nu3": "dihedral: nu3: i _C2*, i _C3*, i _C4*, i _O4*",
+    "nu4": "dihedral: nu4: i _C3*, i _C4*, i _O4*, i _C1*",
 }
 
 # ---------------------------------------------------------------------------
@@ -129,17 +127,17 @@ NUCLEIC_ACID_ANGLES = {
 # dispatched by name via the LABEL_REGISTRY.
 # ---------------------------------------------------------------------------
 RESIDUE_LABELS = {
-    'is_cis':        "label: is_cis",
-    'is_trans':       "label: is_trans",
-    'is_gly':         "label: is_gly",
-    'is_pro':         "label: is_pro",
-    'is_ileval':      "label: is_ileval",
-    'is_prepro':      "label: is_prepro",
-    'has_all_mc':     "label: has_all_mc",
-    'has_all_sc':     "label: has_all_sc",
-    'is_left':        "label: is_left",
-    'is_right':       "label: is_right",
-    'rama_category':  "label: rama_category",
+    "is_cis": "label: is_cis",
+    "is_trans": "label: is_trans",
+    "is_gly": "label: is_gly",
+    "is_pro": "label: is_pro",
+    "is_ileval": "label: is_ileval",
+    "is_prepro": "label: is_prepro",
+    "has_all_mc": "label: has_all_mc",
+    "has_all_sc": "label: has_all_sc",
+    "is_left": "label: is_left",
+    "is_right": "label: is_right",
+    "rama_category": "label: rama_category",
 }
 
 # ---------------------------------------------------------------------------
