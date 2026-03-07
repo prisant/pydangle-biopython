@@ -169,9 +169,13 @@ make test-cov    # tests with coverage
 make lint        # ruff check
 make typecheck   # mypy strict
 make all         # lint + typecheck + test
+make bump        # bump version, commit, and tag
 make clean       # remove build artifacts and editor backups
 make docs        # serve docs locally
 ```
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for the full developer guide including
+git conventions, branching, releasing, and applying patches.
 
 ## License
 

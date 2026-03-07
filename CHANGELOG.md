@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- fix: add --version flag, fix email typo in README (8c0d634)
+- feat: add DEVELOPMENT.md cheatsheet and make bump target (929791d)
+- fix: add --version flag, fix email typo in README (1df4ae7)
 - docs: update README with residue classification labels (5e8632b)
 
 ## v0.3.0 — 2026-03-03
