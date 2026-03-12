@@ -158,13 +158,16 @@ formatting.
 
 Pydangle extends Java Dangle with residue classification labels (rama3–6,
 cis/trans, chirality, atom completeness), DSSP secondary structure
-integration, mmCIF input support, multi-file processing, and flexible
+integration, mmCIF input support, multi-file processing, flexible
 bulk input (file lists, stdin piping, Python glob patterns, recursive
-directory search).  Java Dangle includes validation measurements (cbdev,
-hadev, nhdev, codev), disulfide analysis, and nucleic acid diagnostics
-(pperp, pucker, suitefit) not yet in pydangle.
+directory search), and resilient PDB parsing that handles files
+(e.g. Reduce hydrogen-added PDBs) that crash or confuse other parsers.
+Java Dangle includes validation measurements (cbdev, hadev, nhdev, codev),
+disulfide analysis, and nucleic acid diagnostics (pperp, pucker, suitefit)
+not yet in pydangle.
 
-See ``DIFFERENCES.md`` for a comprehensive comparison.
+See ``DIFFERENCES.md`` for a comprehensive comparison and ``BENCHMARK.md``
+for performance and correctness statistics.
 
 ## Development
 
@@ -174,6 +177,7 @@ make test-cov    # tests with coverage
 make lint        # ruff check
 make typecheck   # mypy strict
 make all         # lint + typecheck + test
+make benchmark   # performance/correctness comparison with Java Dangle
 make bump        # bump version, commit, and tag
 make clean       # remove build artifacts and editor backups
 make docs        # serve docs locally

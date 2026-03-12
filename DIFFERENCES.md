@@ -57,6 +57,12 @@ following the IUPAC-IUB 1970 convention.  Omega is reported on residue *i*
 - **mmCIF input support** — reads both PDB and mmCIF formats via BioPython.
 - **Distance-based chain break detection** — uses CA–CA distance (< 4.6 Å)
   rather than residue sequence numbering to identify chain breaks.
+- **Resilient PDB parsing** — recovers from BioPython header parsing
+  failures by retrying with coordinate-only lines, enabling processing
+  of files (e.g. Reduce hydrogen-added PDBs) that would otherwise crash.
+- **Hydrogen-added PDB support** — handles PDB files with hydrogen atoms
+  and blank chain IDs (common in Reduce-processed files) that Java Dangle
+  cannot compute backbone dihedrals on.
 
 ## Features in Java Dangle not yet in pydangle
 

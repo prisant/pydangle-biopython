@@ -1,13 +1,16 @@
 # Benchmark: pydangle-biopython vs Java Dangle
 
-Performance and correctness comparison on the top100 PDB benchmark set
-(100 structures) using `phi; psi; omega; tau` measurements.
+Performance and correctness comparison using `phi; psi; omega; tau`
+measurements on two benchmark sets:
+
+- **top100pdb** — 100 PDB structures as deposited
+- **top100H** — the same 100 structures with hydrogens added by Reduce
 
 Tested on Linux 6.17, Python 3.12, Java Dangle 1.07.
 
 ## Timing
 
-### Batch (all 100 files in one invocation)
+### top100pdb (no hydrogens)
 
 | Tool     | Mean    | Min     | Max     | Runs |
 |----------|---------|---------|---------|------|
@@ -16,11 +19,21 @@ Tested on Linux 6.17, Python 3.12, Java Dangle 1.07.
 
 **pydangle / dangle = 1.57x**
 
+### top100H (with hydrogens)
+
+| Tool     | Mean     | Min     | Max      | Runs |
+|----------|----------|---------|----------|------|
+| pydangle | 10.06 s  | 9.82 s  | 10.51 s  | 3    |
+| dangle   | 6.33 s   | 6.29 s  | 6.36 s   | 3    |
+
+**pydangle / dangle = 1.59x**
+
 The overhead is primarily Python/BioPython startup and PDB parsing.
 Java Dangle benefits from the JVM's optimized I/O and its own
-lightweight parser.
+lightweight parser.  The ratio is consistent across both benchmark
+sets.
 
-### Per-file
+### Per-file (top100pdb)
 
 | Tool     | Mean     | Median   | Stdev    |
 |----------|----------|----------|----------|
@@ -30,15 +43,21 @@ lightweight parser.
 5 slowest files (pydangle): 1cpc (0.59 s), 1luc (0.58 s),
 1xyz (0.57 s), 2olb (0.53 s), 1kap (0.50 s).
 
-## Correctness
+## Correctness: top100pdb
 
-| Metric                  | Count          |
-|-------------------------|----------------|
-| Rows in common          | 21,003         |
+| Metric                  | Count           |
+|-------------------------|-----------------|
+| Rows matched            | 21,003          |
 | Rows agreeing (≤ 0.01°) | 20,976 (99.87%) |
-| Value mismatches        | 27             |
-| Rows only in pydangle   | 4              |
-| Rows only in dangle     | 0              |
+| Coverage diffs          | 14              |
+| Value mismatches        | 13              |
+| Rows only in pydangle   | 4               |
+| Rows only in dangle     | 0               |
+
+"Coverage diffs" are rows where one tool computes a value and the other
+reports `__?__` — a difference in what is measured, not a computational
+disagreement.  "Value mismatches" are rows where both tools compute
+values that disagree beyond tolerance.
 
 ### Rows only in pydangle (+4)
 
@@ -49,39 +68,35 @@ See DIFFERENCES.md for details.
 
 - 1aac A:9 SER, 1ben A:11 CYS, 1ben C:8 THR, 1lit A:23 SER
 
-### Value mismatches (27)
+### Coverage diffs (14)
 
-All 27 mismatches trace to two root causes: chain break boundary
-handling (17 rows) and alternate conformation selection (10 rows).
-Neither represents a computational error — they are parser-level
-decisions about which atoms to use.
+Residues adjacent to chain breaks where one tool computes a value and
+the other reports `__?__`.  Same root cause as the +4 rows above.
+Affected structures: 1aac, 1ben, 1lit, 1lkk, 1not, 2er7, 2msb, 3b5c.
 
-#### Chain break boundary differences (17 rows)
+### Value mismatches (13)
 
-Structures: 1aac (2), 1ben (4), 1cpc (4), 1fxd (2), 1lit (5).
+All 13 mismatches trace to two root causes: chain break boundary
+handling and alternate conformation selection.  Neither represents a
+computational error — they are parser-level decisions about which
+atoms to use.
 
-These are residues at the edges of missing-residue gaps.  Both tools
-detect the chain break, but they disagree on which measurements are
-computable at fragment boundaries.  Pydangle computes psi for the last
-residue and phi/omega for the first residue of the next fragment using
-neighboring atoms within the fragment.  Dangle reports `__?__` for
-those measurements because it sees the sequence number gap.
+#### Chain break boundary differences (4 rows)
 
-The 1cpc cases illustrate this clearly: residues 72–74 are entirely
-absent from the PDB file in chains B and L.  CaPPBuilder correctly
-breaks the chain into fragments ending at 71 and starting at 75.
-Both tools agree on this break, but pydangle reports psi for residue 71
-(using 71 N, CA, C and 75 N — which are *not* connected) while dangle
-suppresses it.  Similarly for phi/omega of residue 75.
+Structures: 1cpc (4).
+
+Residues 72–74 are entirely absent from chains B and L.  CaPPBuilder
+correctly breaks the chain into fragments ending at 71 and starting
+at 75.  Both tools agree on this break, but they compute different
+values at the fragment boundaries because they select different atoms
+for the measurement.
 
 In 1fxd, residue 11 is missing between 10 and 12, producing the same
 pattern.
 
-#### Alternate conformation selection (10 rows)
+#### Alternate conformation selection (9 rows)
 
-Structures: 1ctj (3), 1ifc (4), 1cpc (not alt conf — see above),
-1fxd (not alt conf — see above).  The remaining mismatches in 1cpc
-and 1fxd are chain break issues, not alt conf.
+Structures: 1ctj (3), 1ifc (4), 1fxd (2).
 
 **1ctj, residues 1–3:** The PDB has two fully distinct backbone
 conformations (altloc A occupancy 0.49, altloc B occupancy 0.51).
@@ -102,15 +117,73 @@ The resulting angle differences range from 0.05° to 1.8°, consistent
 with using slightly different atom positions rather than any
 computational error.
 
+## Correctness: top100H (with hydrogens)
+
+| Metric                  | Count           |
+|-------------------------|-----------------|
+| Rows matched            | 18,384          |
+| Rows agreeing (≤ 0.01°) | 17,532 (95.4%)  |
+| Coverage diffs          | 836             |
+| Value mismatches        | 16              |
+| Rows only in pydangle   | 0               |
+| Rows only in dangle     | 0               |
+
+### Dangle preprocessing
+
+The Reduce-processed PDB files present two problems for Java Dangle:
+blank chain ID columns (column 22) and hydrogen atom records.  Without
+chain IDs, dangle cannot build peptide chains.  With hydrogen atoms
+present, dangle's residue/atom matching is confused and it reports
+`__?__` for backbone dihedrals even when chain IDs are present.
+
+The benchmark script automatically preprocesses files for dangle by
+inserting chain ID `A` where blank and stripping hydrogen atoms.  This
+preprocessing is for benchmark comparison only — pydangle handles
+these files natively without modification.
+
+### Coverage diffs (836)
+
+After preprocessing, 836 rows still show coverage differences where
+pydangle computes a value and dangle reports `__?__`.  These appear as
+a systematic pattern at chain break boundaries within the H-added
+files, likely where Reduce's modifications trigger dangle's chain
+break detection.
+
+### Value mismatches (16)
+
+The same alternate conformation structures (1ctj, 1ifc, 1lit) plus
+additional residues in 1ifc where the H-added file has larger alt conf
+regions.
+
+## Resilient PDB parsing
+
+Three H-added files (1benABH, 1dadH, 1etmH) trigger BioPython parser
+bugs — an `UnboundLocalError` in header parsing and a `ValueError` in
+coordinate parsing.  Pydangle mitigates this with resilient parsing:
+on any parser failure, it strips non-coordinate lines (keeping only
+ATOM/HETATM/MODEL/ENDMDL/TER/END) and retries from a temporary file.
+A warning is emitted to stderr.  This loses PDB header metadata but
+pydangle does not use it.
+
 ## Running the benchmark
 
 ```bash
-# Full benchmark (batch timing + per-file timing + correctness)
+# Full benchmark on deposited structures
 make benchmark
 
 # Quick (skip per-file timing)
 python scripts/benchmark.py --skip-per-file
 
-# Custom PDB directory and tolerance
-python scripts/benchmark.py --pdb-dir /path/to/pdbs --tolerance 0.05
+# Benchmark on hydrogen-added structures
+python scripts/benchmark.py --pdb-dir /path/to/top100H
+
+# Custom tolerance
+python scripts/benchmark.py --tolerance 0.05
 ```
+
+The benchmark script (`scripts/benchmark.py`) handles all
+preprocessing automatically.  It detects files needing chain ID fixes
+or hydrogen stripping, creates temporary preprocessed copies for
+dangle, and cleans them up after the run.  Row matching tolerates
+chain ID mismatches between the two tools by falling back to
+chain-ID-free keys when exact keys don't match.

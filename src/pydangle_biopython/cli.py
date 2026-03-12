@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+import tempfile
 from typing import Any
 
 from Bio.PDB import MMCIFParser, PDBParser  # type: ignore[attr-defined]
@@ -17,6 +18,43 @@ from pydangle_biopython.measure import process_measurement_commands
 
 _PDB_EXTENSIONS = {".pdb", ".ent", ".pdb1"}
 _CIF_EXTENSIONS = {".cif", ".mmcif"}
+_COORD_PREFIXES = ("ATOM  ", "HETATM", "MODEL ", "ENDMDL", "TER   ", "TER\n")
+
+
+def _parse_pdb_resilient(filepath: str) -> Any:
+    """Parse a PDB file, falling back to coordinate-only parsing on error.
+
+    BioPython's PDB header parser can crash on some files (e.g. Reduce
+    hydrogen-added files with unusual REMARK records).  When that happens,
+    retry parsing with only ATOM/HETATM/MODEL/ENDMDL/TER lines.
+    """
+    parser: Any = PDBParser(QUIET=True)  # type: ignore[no-untyped-call]
+    try:
+        return parser.get_structure("X", filepath)
+    except Exception:
+        pass
+
+    # Fallback: strip non-coordinate lines and parse from a temp file
+    print(
+        f"pydangle-biopython: warning: header parse failed for "
+        f"{os.path.basename(filepath)}, retrying without headers",
+        file=sys.stderr,
+    )
+    with open(filepath) as fh:
+        coord_lines = [
+            line
+            for line in fh
+            if line.startswith(_COORD_PREFIXES) or line.strip() == "END"
+        ]
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".pdb", delete=False
+    ) as tf:
+        tf.writelines(coord_lines)
+        tmp_path = tf.name
+    try:
+        return parser.get_structure("X", tmp_path)
+    finally:
+        os.unlink(tmp_path)
 
 
 def _guess_format(filepath: str) -> str:
@@ -199,20 +237,13 @@ def main(argv: list[str] | None = None) -> int:
         file_format: str = args.file_format or _guess_format(filepath)
         basename = os.path.basename(filepath)
 
-        struct_parser: Any
         if file_format == "cif":
-            struct_parser = MMCIFParser(  # type: ignore[no-untyped-call]
+            struct_parser: Any = MMCIFParser(  # type: ignore[no-untyped-call]
                 QUIET=True,
             )
+            structure = struct_parser.get_structure("X", filepath)
         else:
-            struct_parser = PDBParser(  # type: ignore[no-untyped-call]
-                QUIET=True,
-            )
-
-        structure = struct_parser.get_structure(
-            "X",
-            filepath,
-        )
+            structure = _parse_pdb_resilient(filepath)
 
         output_lines = process_measurement_commands(
             basename,

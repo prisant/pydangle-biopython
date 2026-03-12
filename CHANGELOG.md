@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- docs: update BENCHMARK.md with detailed mismatch analysis (996e3dd)
+- feat: resilient PDB parsing and benchmark improvements (326e590)
+- docs: update BENCHMARK.md with detailed mismatch analysis (57e2a71)
 - docs: add BENCHMARK.md with performance and correctness results (c4f215e)
 - feat: add benchmark script comparing pydangle vs Java Dangle (0db98b1)
 - feat: add file-list, glob, and directory input methods (36833cd)
