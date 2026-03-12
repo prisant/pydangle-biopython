@@ -109,6 +109,10 @@ pydangle-biopython -c 'phi; psi' examples/*.pdb
 | is_left        | label | True / False / \_\_?\_\_                         |
 | is_right       | label | True / False / \_\_?\_\_                         |
 | rama_category  | label | General / Gly / IleVal / TransPro / CisPro / PrePro |
+| rama6          | label | (alias for rama_category)                            |
+| rama5          | label | General / Gly / IleVal / Pro / PrePro                |
+| rama4          | label | General / Gly / Pro / PrePro                         |
+| rama3          | label | General / Gly / Pro                                  |
 
 Ramachandran categories follow the wwPDB Validation Task Force conventions
 (Read et al., Structure 19:1395–1412, 2011).

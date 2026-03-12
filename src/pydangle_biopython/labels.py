@@ -350,6 +350,83 @@ def label_is_right(
     return str(chi > 0.0)
 
 
+
+# ---------------------------------------------------------------------------
+# Ramachandran category variants
+# ---------------------------------------------------------------------------
+
+#: Reduction from 6-category to 3-category (Lovell et al. 2003 style).
+_RAMA6_TO_RAMA3: dict[str, str] = {
+    "General": "General",
+    "Gly": "Gly",
+    "IleVal": "General",
+    "TransPro": "Pro",
+    "CisPro": "Pro",
+    "PrePro": "General",
+}
+
+#: Reduction from 6-category to 4-category.
+_RAMA6_TO_RAMA4: dict[str, str] = {
+    "General": "General",
+    "Gly": "Gly",
+    "IleVal": "General",
+    "TransPro": "Pro",
+    "CisPro": "Pro",
+    "PrePro": "PrePro",
+}
+
+#: Reduction from 6-category to 5-category.
+_RAMA6_TO_RAMA5: dict[str, str] = {
+    "General": "General",
+    "Gly": "Gly",
+    "IleVal": "IleVal",
+    "TransPro": "Pro",
+    "CisPro": "Pro",
+    "PrePro": "PrePro",
+}
+
+
+def label_rama3(
+    residue_list: list[Any], index: int, unknown: str,
+) -> str:
+    """Assign 3-category Ramachandran type (Lovell et al. 2003).
+
+    Categories: General, Gly, Pro.
+    IleVal and PrePro map to General; CisPro/TransPro map to Pro.
+    """
+    cat6 = label_rama_category(residue_list, index, unknown)
+    if cat6 == unknown:
+        return unknown
+    return _RAMA6_TO_RAMA3[cat6]
+
+
+def label_rama4(
+    residue_list: list[Any], index: int, unknown: str,
+) -> str:
+    """Assign 4-category Ramachandran type.
+
+    Categories: General, Gly, Pro, PrePro.
+    IleVal maps to General; CisPro/TransPro map to Pro.
+    """
+    cat6 = label_rama_category(residue_list, index, unknown)
+    if cat6 == unknown:
+        return unknown
+    return _RAMA6_TO_RAMA4[cat6]
+
+
+def label_rama5(
+    residue_list: list[Any], index: int, unknown: str,
+) -> str:
+    """Assign 5-category Ramachandran type.
+
+    Categories: General, Gly, IleVal, Pro, PrePro.
+    CisPro/TransPro map to Pro.
+    """
+    cat6 = label_rama_category(residue_list, index, unknown)
+    if cat6 == unknown:
+        return unknown
+    return _RAMA6_TO_RAMA5[cat6]
+
 # ---------------------------------------------------------------------------
 # Label dispatch registry
 # ---------------------------------------------------------------------------
@@ -372,4 +449,8 @@ LABEL_REGISTRY: dict[str, LabelFunc] = {
     "is_left": label_is_left,
     "is_right": label_is_right,
     "rama_category": label_rama_category,
+    "rama6": label_rama_category,
+    "rama5": label_rama5,
+    "rama4": label_rama4,
+    "rama3": label_rama3,
 }

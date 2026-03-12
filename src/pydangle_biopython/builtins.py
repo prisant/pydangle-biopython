@@ -138,6 +138,10 @@ RESIDUE_LABELS = {
     "is_left": "label: is_left",
     "is_right": "label: is_right",
     "rama_category": "label: rama_category",
+    "rama6": "label: rama6",
+    "rama5": "label: rama5",
+    "rama4": "label: rama4",
+    "rama3": "label: rama3",
 }
 
 # ---------------------------------------------------------------------------

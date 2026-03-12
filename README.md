@@ -104,9 +104,11 @@ Labels use a two-field syntax with no atom specifications
 
 ### Builtin labels
 
-`rama_category` assigns wwPDB Validation Task Force Ramachandran categories
-(Read et al., Structure 19:1395–1412, 2011): General, Gly, IleVal, TransPro,
-CisPro, or PrePro.
+`rama_category` (also `rama6`) assigns wwPDB Validation Task Force Ramachandran
+categories (Read et al., Structure 19:1395–1412, 2011): General, Gly, IleVal,
+TransPro, CisPro, or PrePro.  Reduced schemes are available as `rama5`
+(merges cis/trans Pro), `rama4` (also merges IleVal into General), and
+`rama3` (General, Gly, Pro only, following Lovell et al. 2003).
 
 `is_cis` / `is_trans` classify the peptide bond based on the omega dihedral
 angle (cis when |ω| < 30°).

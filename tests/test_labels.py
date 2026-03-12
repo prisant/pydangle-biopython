@@ -13,6 +13,9 @@ from pydangle_biopython.labels import (
     label_is_pro,
     label_is_right,
     label_is_trans,
+    label_rama3,
+    label_rama4,
+    label_rama5,
     label_rama_category,
 )
 from pydangle_biopython.measure import process_measurement_commands
@@ -45,6 +48,10 @@ class TestLabelRegistry:
             "is_left",
             "is_right",
             "rama_category",
+            "rama6",
+            "rama3",
+            "rama4",
+            "rama5",
         }
         assert set(LABEL_REGISTRY.keys()) == expected
 
@@ -213,6 +220,59 @@ class TestRamaCategory:
         assert label_rama_category(residue_list, 2, UNK) == "IleVal"
 
 
+class TestRamaVariants:
+    """Test reduced Ramachandran category schemes."""
+
+    def test_rama6_is_alias(self, hexapeptide_chain):
+        """rama6 should produce same result as rama_category."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        for i in range(len(residue_list)):
+            assert label_rama_category(residue_list, i, UNK) == (
+                LABEL_REGISTRY['rama6'](residue_list, i, UNK)
+            )
+
+    def test_rama3_gly(self, hexapeptide_chain):
+        """GLY (index 1) should be 'Gly' in rama3."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_rama3(residue_list, 1, UNK) == 'Gly'
+
+    def test_rama3_pro(self, hexapeptide_chain):
+        """PRO (index 3) should be 'Pro' in rama3."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_rama3(residue_list, 3, UNK) == 'Pro'
+
+    def test_rama3_ileval_maps_to_general(self, hexapeptide_chain):
+        """ILE (index 2) maps to 'General' in rama3."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_rama3(residue_list, 2, UNK) == 'General'
+
+    def test_rama4_prepro(self, hexapeptide_chain):
+        """ILE (index 2) is IleVal in rama6 but PrePro check:
+        ILE before PRO maps to General in rama4 (IleVal takes priority
+        over PrePro in rama6, so it maps to General not PrePro)."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        # ILE at index 2 is IleVal in rama6 -> General in rama4
+        assert label_rama4(residue_list, 2, UNK) == 'General'
+
+    def test_rama5_ileval(self, hexapeptide_chain):
+        """ILE (index 2) should remain 'IleVal' in rama5."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_rama5(residue_list, 2, UNK) == 'IleVal'
+
+    def test_rama5_pro(self, hexapeptide_chain):
+        """PRO (index 3) should be 'Pro' in rama5 (not TransPro)."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_rama5(residue_list, 3, UNK) == 'Pro'
+
+    def test_rama3_only_three_values(self, hexapeptide_chain):
+        """All rama3 values should be General, Gly, or Pro."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        valid = {'General', 'Gly', 'Pro'}
+        for i in range(len(residue_list)):
+            result = label_rama3(residue_list, i, UNK)
+            assert result in valid, f"Index {i}: {result!r} not in {valid}"
+
+
 class TestHasAllMc:
     """Test mainchain atom completeness."""
 
@@ -329,25 +389,24 @@ class TestLabelIntegration:
     """Test labels via the full measurement pipeline."""
 
     def test_rama_in_output(self, hexapeptide_structure):
-        """rama_category should appear in output lines."""
+        """All rama variants should appear in output lines."""
         lines = process_measurement_commands(
             "test",
             hexapeptide_structure,
-            "rama_category",
+            "rama_category; rama6; rama5; rama4; rama3",
         )
         data_lines = [line for line in lines if not line.startswith("#")]
         assert len(data_lines) > 0
         valid = {
-            "General",
-            "Gly",
-            "IleVal",
-            "TransPro",
-            "CisPro",
-            "PrePro",
+            "General", "Gly", "IleVal",
+            "TransPro", "CisPro", "PrePro", "Pro",
         }
         for line in data_lines:
-            category = line.rsplit(":", 1)[-1]
-            assert category in valid, f"Invalid category: {category!r} in {line}"
+            # Check all 5 rama fields (last 5 colon-separated values)
+            parts = line.split(":")
+            rama_values = parts[-5:]
+            for val in rama_values:
+                assert val in valid, f"Invalid category: {val!r} in {line}"
 
     def test_mixed_output(self, hexapeptide_structure):
         """Labels mixed with measurements should all produce output."""
