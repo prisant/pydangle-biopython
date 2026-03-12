@@ -7,7 +7,8 @@ on some design choices and adding new capabilities.
 
 On the top100 PDB benchmark set with `phi; psi; omega`, pydangle matches
 Java Dangle output to within rounding precision on all residues, with the
-intentional differences noted below.
+intentional differences noted below.  See ``BENCHMARK.md`` for full
+performance and correctness statistics.
 
 ### Chain gap handling
 

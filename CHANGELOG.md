@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add benchmark script comparing pydangle vs Java Dangle (3747e55)
+- docs: add BENCHMARK.md with performance and correctness results (210060d)
+- feat: add benchmark script comparing pydangle vs Java Dangle (0db98b1)
 - feat: add file-list, glob, and directory input methods (36833cd)
 - docs: add DIFFERENCES.md and update documentation for dssp/rama variants (eff1a19)
 - feat: add dssp and dssp3 labels via external mkdssp (bbd6a4d)
