@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add file-list, glob, and directory input methods (6b2c148)
+- feat: add benchmark script comparing pydangle vs Java Dangle (3747e55)
+- feat: add file-list, glob, and directory input methods (36833cd)
 - docs: add DIFFERENCES.md and update documentation for dssp/rama variants (eff1a19)
 - feat: add dssp and dssp3 labels via external mkdssp (bbd6a4d)
 - feat: add rama3/rama4/rama5/rama6 Ramachandran category variants (3d0a2d9)
