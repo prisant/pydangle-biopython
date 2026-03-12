@@ -4,8 +4,9 @@ Michael G. Prisant, Ph.D.
 Prisant Scientific
 info@prisantscientific.org
 
-Compute distances, angles, dihedrals, and per-residue classifications
-in protein and nucleic acid structures.
+Compute distances, angles, dihedrals, per-residue classifications,
+and DSSP secondary structure assignments in protein and nucleic acid
+structures.
 
 This package uses **BioPython** as the structure-parsing backend.
 Sibling packages `pydangle-cctbx` and `pydangle-gemmi` will provide the same
@@ -70,6 +71,9 @@ pydangle-biopython -c 'phi; psi; rama_category; is_cis' structure.pdb
 
 # Mixed measurements, labels, and completeness checks
 pydangle-biopython -c 'phi; psi; rama_category; has_all_mc; has_all_sc' structure.pdb
+
+# DSSP secondary structure (requires mkdssp on PATH)
+pydangle-biopython -c 'phi; psi; dssp; dssp3; rama_category' structure.pdb
 ```
 
 ## Output format
@@ -102,6 +106,13 @@ angles (°) from atom coordinates.  These can be specified as builtins
 Labels use a two-field syntax with no atom specifications
 (e.g. `rama_category`, `is_cis`).
 
+**DSSP secondary structure** labels call the external ``mkdssp`` binary
+to assign per-residue secondary structure using the Kabsch & Sander
+hydrogen-bond energy method.  This requires ``mkdssp`` to be installed
+on ``$PATH`` (``apt install dssp`` on Debian/Ubuntu, or
+``conda install -c conda-forge dssp``).  If ``mkdssp`` is not found,
+DSSP labels return ``__?__``.
+
 ### Builtin labels
 
 `rama_category` (also `rama6`) assigns wwPDB Validation Task Force Ramachandran
@@ -128,40 +139,19 @@ protein backbone, sidechain, nucleic acid, and label builtins.
 
 ## Differences from Java Dangle
 
-Pydangle aims for scientific compatibility with Java Dangle while improving
-on some design choices.  On the top100 PDB benchmark set with `phi; psi; omega`,
-pydangle matches Java Dangle output to within rounding precision on all
-residues, with the following intentional differences.
+Pydangle matches Java Dangle output to within rounding precision on the
+top100 PDB benchmark set.  Key differences include distance-based chain
+break detection (rather than sequence numbering gaps) and compact chain ID
+formatting.
 
-### Chain gap handling
+Pydangle extends Java Dangle with residue classification labels (rama3–6,
+cis/trans, chirality, atom completeness), DSSP secondary structure
+integration, mmCIF input support, and multi-file processing.  Java Dangle
+includes validation measurements (cbdev, hadev, nhdev, codev), disulfide
+analysis, and nucleic acid diagnostics (pperp, pucker, suitefit) not yet
+in pydangle.
 
-Java Dangle treats discontinuities in residue sequence numbering as chain
-breaks, suppressing measurements across the gap even when coordinates are
-present and the peptide bond is intact.  Pydangle uses BioPython's
-`CaPPBuilder` to detect chain breaks based on CA–CA distance (< 4.6 Å),
-so measurements are computed whenever residues are physically connected.
-This adds a small number of correct measurements that Java Dangle omits
-(+4 lines across the top100 set).
-
-### Modified amino acids
-
-Both programs use the same residue-name whitelist (derived from Java Dangle's
-`isProtOrNucAcid()`) to identify polymer residues.  Standard amino acids and
-common modifications such as PCA (pyroglutamic acid), MSE (selenomethionine),
-and CSD (cysteine sulfonic acid) are included.  Non-polymer het groups
-(chromophores, cofactors, etc.) are excluded.
-
-### Chain ID formatting
-
-Java Dangle space-pads chain identifiers (e.g. ` A:`), following legacy PDB
-conventions.  Pydangle uses compact chain IDs (e.g. `A:`) for easier
-programmatic parsing.
-
-### Omega definition
-
-Both programs define omega as the dihedral `i-1 CA, i-1 C, i N, i CA`,
-following the IUPAC-IUB 1970 convention.  Omega is reported on residue *i*
-(the residue containing the N atom of the peptide bond).
+See ``DIFFERENCES.md`` for a comprehensive comparison.
 
 ## Development
 

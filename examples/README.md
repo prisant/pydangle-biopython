@@ -27,6 +27,10 @@ pydangle-biopython -c 'distance: CaCa: i _CA_, i+1 _CA_' examples/AGPQVS.pdb
 # Virtual Cα angle
 pydangle-biopython -c 'angle: vCa: i-1 _CA_, i _CA_, i+1 _CA_' examples/AGPQVS.pdb
 
+# DSSP secondary structure (requires mkdssp on PATH)
+pydangle-biopython \\
+  -c 'phi; psi; dssp; dssp3; rama_category' examples/1ubq.pdb
+
 # Multiple files
 pydangle-biopython -c 'phi; psi' examples/*.pdb
 ```
@@ -113,9 +117,28 @@ pydangle-biopython -c 'phi; psi' examples/*.pdb
 | rama5          | label | General / Gly / IleVal / Pro / PrePro                |
 | rama4          | label | General / Gly / Pro / PrePro                         |
 | rama3          | label | General / Gly / Pro                                  |
+| dssp           | label | H / B / E / G / I / T / S / C / P                   |
+| dssp3          | label | H / E / C                                            |
+| rama6          | label | (alias for rama_category)                            |
+| rama5          | label | General / Gly / IleVal / Pro / PrePro                |
+| rama4          | label | General / Gly / Pro / PrePro                         |
+| rama3          | label | General / Gly / Pro                                  |
 
 Ramachandran categories follow the wwPDB Validation Task Force conventions
 (Read et al., Structure 19:1395–1412, 2011).
+
+### DSSP secondary structure
+
+DSSP labels require the external ``mkdssp`` binary on ``$PATH``.
+Install via ``apt install dssp`` (Debian/Ubuntu) or
+``conda install -c conda-forge dssp``.
+
+``dssp`` returns the 8-state code: H (alpha helix), G (3-10 helix),
+I (pi helix), E (extended strand), B (beta bridge), T (turn),
+S (bend), C (coil), P (polyproline helix, mkdssp v4+).
+
+``dssp3`` reduces to 3-state: H (helix: H/G/I), E (strand: E/B),
+C (coil: T/S/C/P).
 
 ## Custom measurements
 
