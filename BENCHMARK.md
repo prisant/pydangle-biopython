@@ -51,24 +51,56 @@ See DIFFERENCES.md for details.
 
 ### Value mismatches (27)
 
-The 27 mismatches fall into three categories:
+All 27 mismatches trace to two root causes: chain break boundary
+handling (17 rows) and alternate conformation selection (10 rows).
+Neither represents a computational error — they are parser-level
+decisions about which atoms to use.
 
-**Chain break boundary (13 rows):** Residues adjacent to chain breaks
-where one tool computes a value and the other reports `__?__`.  These
-are the same chain gap handling difference described above — pydangle
-reports measurements across physically connected residues that dangle
-treats as broken chains.  Affected structures: 1aac, 1ben, 1lit.
+#### Chain break boundary differences (17 rows)
 
-**Alternate conformation handling (10 rows):** Structures with
-alternate conformations where the two parsers select different atom
-positions, producing genuinely different angle values.  The largest
-discrepancies appear in 1cpc (chains B and L, residues 71 and 75),
-1ctj (residues 1–3), and 1fxd (residues 10 and 12).
+Structures: 1aac (2), 1ben (4), 1cpc (4), 1fxd (2), 1lit (5).
 
-**Rounding at tolerance boundary (4 rows):** Small differences in
-1ifc (residues 30, 31, 47, 48) where values differ by 0.05–1.0°,
-likely due to floating-point differences between BioPython's and
-Java Dangle's coordinate handling.
+These are residues at the edges of missing-residue gaps.  Both tools
+detect the chain break, but they disagree on which measurements are
+computable at fragment boundaries.  Pydangle computes psi for the last
+residue and phi/omega for the first residue of the next fragment using
+neighboring atoms within the fragment.  Dangle reports `__?__` for
+those measurements because it sees the sequence number gap.
+
+The 1cpc cases illustrate this clearly: residues 72–74 are entirely
+absent from the PDB file in chains B and L.  CaPPBuilder correctly
+breaks the chain into fragments ending at 71 and starting at 75.
+Both tools agree on this break, but pydangle reports psi for residue 71
+(using 71 N, CA, C and 75 N — which are *not* connected) while dangle
+suppresses it.  Similarly for phi/omega of residue 75.
+
+In 1fxd, residue 11 is missing between 10 and 12, producing the same
+pattern.
+
+#### Alternate conformation selection (10 rows)
+
+Structures: 1ctj (3), 1ifc (4), 1cpc (not alt conf — see above),
+1fxd (not alt conf — see above).  The remaining mismatches in 1cpc
+and 1fxd are chain break issues, not alt conf.
+
+**1ctj, residues 1–3:** The PDB has two fully distinct backbone
+conformations (altloc A occupancy 0.49, altloc B occupancy 0.51).
+BioPython selects altloc B (higher occupancy).  Java Dangle selects
+altloc A.  This produces completely different phi/psi/omega/tau values
+because the backbone atoms are in different physical positions.
+Residue 3 has no alt confs itself but its phi and omega depend on
+atoms from residue 2 (which does), so it is also affected.
+
+**1ifc, residues 30, 31, 47, 48:** Residues 29–49 have full A/B
+alternate conformations for all backbone atoms.  BioPython selects a
+*mix* of altlocs within individual residues — for example, residue 30
+uses N and CA from altloc A but C from altloc B.  This happens because
+BioPython's PDBParser, when multiple alt confs have equal or near-equal
+occupancy, keeps whichever atom it encounters first per atom name.
+Java Dangle presumably selects one altloc consistently per residue.
+The resulting angle differences range from 0.05° to 1.8°, consistent
+with using slightly different atom positions rather than any
+computational error.
 
 ## Running the benchmark
 
