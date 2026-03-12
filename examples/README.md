@@ -33,6 +33,12 @@ pydangle-biopython \\
 
 # Multiple files
 pydangle-biopython -c 'phi; psi' examples/*.pdb
+
+# Bulk input: file list, stdin pipe, glob, directory
+pydangle-biopython -c 'phi; psi' -f file_list.txt
+find examples/ -name '*.pdb' | pydangle-biopython -c 'phi; psi' -f -
+pydangle-biopython -c 'phi; psi' -g 'examples/**/*.pdb'
+pydangle-biopython -c 'phi; psi' -d examples/
 ```
 
 ## Builtin reference

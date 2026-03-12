@@ -95,6 +95,60 @@ class TestCLI:
         stderr = capsys.readouterr().err
         assert "cannot find" in stderr
 
+    def test_no_files_error(self, capsys):
+        ret = main(["-c", "phi"])
+        assert ret == 1
+        stderr = capsys.readouterr().err
+        assert "no structure files" in stderr
+
+    def test_file_list_flag(self, pdb_file, tmp_path, capsys):
+        listing = tmp_path / "files.txt"
+        listing.write_text(pdb_file + "\n")
+        ret = main(["-c", "phi", "-f", str(listing)])
+        assert ret == 0
+        output = capsys.readouterr().out
+        assert "pydangle" in output
+
+    def test_file_list_stdin(self, pdb_file, monkeypatch, capsys):
+        from io import StringIO
+
+        monkeypatch.setattr("sys.stdin", StringIO(pdb_file + "\n"))
+        ret = main(["-c", "phi", "-f", "-"])
+        assert ret == 0
+        output = capsys.readouterr().out
+        assert "pydangle" in output
+
+    def test_glob_flag(self, pdb_file, capsys):
+        import os
+
+        pattern = os.path.join(os.path.dirname(pdb_file), "*.pdb")
+        ret = main(["-c", "phi", "-g", pattern])
+        assert ret == 0
+        output = capsys.readouterr().out
+        assert "pydangle" in output
+
+    def test_directory_flag(self, pdb_file, capsys):
+        import os
+
+        ret = main(["-c", "phi", "-d", os.path.dirname(pdb_file)])
+        assert ret == 0
+        output = capsys.readouterr().out
+        assert "pydangle" in output
+
+    def test_combined_sources(self, pdb_file, tmp_path, capsys):
+        # Second file via file list
+        f2 = tmp_path / "second.pdb"
+        from tests.conftest import HEXAPEPTIDE_PDB
+
+        f2.write_text(HEXAPEPTIDE_PDB)
+        listing = tmp_path / "files.txt"
+        listing.write_text(str(f2) + "\n")
+        ret = main(["-c", "phi", "-f", str(listing), pdb_file])
+        assert ret == 0
+        output = capsys.readouterr().out
+        lines = [ln for ln in output.strip().split("\n") if not ln.startswith("#")]
+        assert len(lines) > 2  # output from both files
+
     def test_version(self, capsys):
         with pytest.raises(SystemExit, match="0"):
             main(["--version"])

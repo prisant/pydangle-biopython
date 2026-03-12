@@ -8,6 +8,7 @@ from typing import Any
 from Bio.PDB import MMCIFParser, PDBParser  # type: ignore[attr-defined]
 
 from pydangle_biopython import __version__
+from pydangle_biopython.fileinput import collect_files
 from pydangle_biopython.measure import process_measurement_commands
 
 # ---------------------------------------------------------------------------
@@ -73,6 +74,13 @@ def main(argv: list[str] | None = None) -> int:
             " delta; epsilon; zeta' rna.cif\n"
             "  pydangle-biopython -c 'distance: Ca_Ca:"
             " i-1 _CA_, i _CA_' structure.pdb\n"
+            "\n"
+            "Bulk input:\n"
+            "  pydangle-biopython -f file_list.txt\n"
+            "  find /data -name '*.pdb' | pydangle-biopython"
+            " -f -\n"
+            "  pydangle-biopython -g '**/*.pdb'\n"
+            "  pydangle-biopython -d /data/structures/\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -86,8 +94,35 @@ def main(argv: list[str] | None = None) -> int:
 
     ap.add_argument(
         "structure_files",
-        nargs="+",
+        nargs="*",
         help="One or more PDB or mmCIF structure files.",
+    )
+    ap.add_argument(
+        "-f",
+        "--file-list",
+        action="append",
+        dest="file_lists",
+        metavar="FILE",
+        help=(
+            "Read structure file paths from FILE (one per line). "
+            "Use - for stdin."
+        ),
+    )
+    ap.add_argument(
+        "-g",
+        "--glob",
+        action="append",
+        dest="glob_patterns",
+        metavar="PATTERN",
+        help="Expand a Python glob pattern (e.g., '**/*.pdb').",
+    )
+    ap.add_argument(
+        "-d",
+        "--directory",
+        action="append",
+        dest="directories",
+        metavar="DIR",
+        help="Recursively find .pdb/.cif/.mmcif/.ent files under DIR.",
     )
     ap.add_argument(
         "-c",
@@ -120,8 +155,30 @@ def main(argv: list[str] | None = None) -> int:
 
     args = ap.parse_args(argv)
 
+    # Collect files from all input sources
+    try:
+        all_files = collect_files(
+            args.structure_files or None,
+            args.file_lists,
+            args.glob_patterns,
+            args.directories,
+        )
+    except FileNotFoundError as exc:
+        print(
+            f"pydangle-biopython: error: {exc}",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not all_files:
+        print(
+            "pydangle-biopython: error: no structure files specified",
+            file=sys.stderr,
+        )
+        return 1
+
     # Validate all input files before processing any
-    for filepath in args.structure_files:
+    for filepath in all_files:
         if not os.path.isfile(filepath):
             print(
                 f"pydangle-biopython: error: cannot find {filepath}",
@@ -130,7 +187,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     # Process each file
-    for filepath in args.structure_files:
+    total = len(all_files)
+    show_progress = total > 10 and sys.stderr.isatty()
+    for idx, filepath in enumerate(all_files):
+        if show_progress:
+            print(
+                f"\r[{idx + 1}/{total}] {os.path.basename(filepath)}",
+                end="",
+                file=sys.stderr,
+            )
         file_format: str = args.file_format or _guess_format(filepath)
         basename = os.path.basename(filepath)
 
@@ -159,6 +224,8 @@ def main(argv: list[str] | None = None) -> int:
         for line in output_lines:
             print(line)
 
+    if show_progress:
+        print("", file=sys.stderr)  # newline after progress
     return 0
 
 

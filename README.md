@@ -66,6 +66,18 @@ pydangle-biopython -c 'distance: Ca_Ca: i-1 _CA_, i _CA_' structure.pdb
 # Multiple input files
 pydangle-biopython -c 'phi; psi; omega' *.pdb
 
+# Bulk input: read paths from a file list
+pydangle-biopython -c 'phi; psi' -f file_list.txt
+
+# Bulk input: pipe paths from find/ls
+find /data -name '*.pdb' | pydangle-biopython -c 'phi; psi' -f -
+
+# Bulk input: Python glob (bypasses shell ARG_MAX)
+pydangle-biopython -c 'phi; psi' -g '**/*.pdb'
+
+# Bulk input: recursive directory search
+pydangle-biopython -c 'phi; psi' -d /data/structures/
+
 # Residue classification labels
 pydangle-biopython -c 'phi; psi; rama_category; is_cis' structure.pdb
 
@@ -146,10 +158,11 @@ formatting.
 
 Pydangle extends Java Dangle with residue classification labels (rama3–6,
 cis/trans, chirality, atom completeness), DSSP secondary structure
-integration, mmCIF input support, and multi-file processing.  Java Dangle
-includes validation measurements (cbdev, hadev, nhdev, codev), disulfide
-analysis, and nucleic acid diagnostics (pperp, pucker, suitefit) not yet
-in pydangle.
+integration, mmCIF input support, multi-file processing, and flexible
+bulk input (file lists, stdin piping, Python glob patterns, recursive
+directory search).  Java Dangle includes validation measurements (cbdev,
+hadev, nhdev, codev), disulfide analysis, and nucleic acid diagnostics
+(pperp, pucker, suitefit) not yet in pydangle.
 
 See ``DIFFERENCES.md`` for a comprehensive comparison.
 

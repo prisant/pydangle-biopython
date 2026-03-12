@@ -37,6 +37,7 @@ make install      # editable install + dev deps + git hooks
 ```
 src/pydangle_biopython/
 ├── cli.py          # Command-line interface (argparse)
+├── fileinput.py    # File input collection (file lists, glob, directory)
 ├── parser.py       # Measurement command string parser
 ├── builtins.py     # Built-in measurement definitions
 ├── measure.py      # Measurement computation and output pipeline
@@ -80,7 +81,7 @@ has_all_mc/has_all_sc, is_left/is_right
 ## Planned work
 
 - **property type** — numeric per-residue values (cbdev, mc_bfactor, sc_bfactor)
-- **Input improvements** — file lists, piping, web fetch
+- **Input improvements** — ~~file lists, piping~~ (done), web fetch
 - **JSON output** — alternative to colon-separated format
 - **Parallelization** — multiprocessing support
 - **More Java Dangle features** — see DIFFERENCES.md

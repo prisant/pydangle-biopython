@@ -50,6 +50,9 @@ following the IUPAC-IUB 1970 convention.  Omega is reported on residue *i*
   labels via external mkdssp, providing hydrogen-bond-based secondary
   structure assignment independent of phi/psi geometry.
 - **Multiple input files** — process many structures in a single command.
+- **Bulk input methods** — file lists (`-f`), stdin piping (`-f -`),
+  Python glob patterns (`-g`), and recursive directory search (`-d`)
+  for processing large numbers of structures without shell ARG_MAX limits.
 - **mmCIF input support** — reads both PDB and mmCIF formats via BioPython.
 - **Distance-based chain break detection** — uses CA–CA distance (< 4.6 Å)
   rather than residue sequence numbering to identify chain breaks.
@@ -91,4 +94,5 @@ following the IUPAC-IUB 1970 convention.  Omega is reported on residue *i*
 
 ### Input
 
-- Reading from standard input (stdin pipe).
+(No remaining input gaps — stdin piping, file lists, glob patterns, and
+directory recursion are now supported in pydangle.)
