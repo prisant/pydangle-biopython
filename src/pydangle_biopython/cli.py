@@ -153,6 +153,7 @@ def main(argv: list[str] | None = None) -> int:
             basename,
             structure,
             args.command_string,
+            filepath=filepath,
         )
 
         for line in output_lines:

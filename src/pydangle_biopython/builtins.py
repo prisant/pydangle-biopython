@@ -142,6 +142,8 @@ RESIDUE_LABELS = {
     "rama5": "label: rama5",
     "rama4": "label: rama4",
     "rama3": "label: rama3",
+    "dssp": "label: dssp",
+    "dssp3": "label: dssp3",
 }
 
 # ---------------------------------------------------------------------------

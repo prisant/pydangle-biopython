@@ -26,6 +26,8 @@ from typing import Any
 
 from Bio.PDB.vectors import calc_dihedral
 
+from pydangle_biopython.dssp import label_dssp, label_dssp3
+
 # ---------------------------------------------------------------------------
 # Omega computation helper
 # ---------------------------------------------------------------------------
@@ -453,4 +455,6 @@ LABEL_REGISTRY: dict[str, LabelFunc] = {
     "rama5": label_rama5,
     "rama4": label_rama4,
     "rama3": label_rama3,
+    "dssp": label_dssp,
+    "dssp3": label_dssp3,
 }

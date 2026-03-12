@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add rama3/rama4/rama5/rama6 Ramachandran category variants (f94ddfa)
+- feat: add dssp and dssp3 labels via external mkdssp (450496d)
+- feat: add rama3/rama4/rama5/rama6 Ramachandran category variants (3d0a2d9)
 - feat: add DEVELOPMENT.md cheatsheet and make bump target (9ded5ce)
 - fix: add --version flag, fix email typo in README (1df4ae7)
 - docs: update README with residue classification labels (5e8632b)

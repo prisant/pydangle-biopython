@@ -13,6 +13,10 @@ from typing import Any
 from Bio.PDB.Polypeptide import CaPPBuilder
 from Bio.PDB.vectors import Vector, calc_angle, calc_dihedral
 
+from pydangle_biopython.dssp import (
+    get_dssp_assignments_for_file,
+    set_dssp_assignments,
+)
 from pydangle_biopython.labels import LABEL_REGISTRY
 from pydangle_biopython.parser import ParsedCommand, command_string_parser
 
@@ -493,6 +497,7 @@ def process_measurement_commands(
     structure: Any,
     commands: str,
     unknown_str: str = "__?__",
+    filepath: str | None = None,
 ) -> list[str]:
     """Process measurement commands on an entire structure.
 
@@ -506,6 +511,9 @@ def process_measurement_commands(
         User-supplied measurement command string.
     unknown_str : str
         String used when a measurement cannot be computed.
+    filepath : str or None
+        Path to the structure file on disk.  Required for DSSP
+        labels; if None, DSSP labels return *unknown_str*.
 
     Returns
     -------
@@ -514,6 +522,18 @@ def process_measurement_commands(
         valid measurement.
     """
     command_list = command_string_parser(commands)
+
+    # Set up DSSP assignments if any dssp labels are requested
+    _dssp_labels = {'dssp', 'dssp3'}
+    needs_dssp = any(
+        cmd[0] == 'label' and cmd[1] in _dssp_labels
+        for cmd in command_list
+    )
+    if needs_dssp and filepath is not None:
+        set_dssp_assignments(get_dssp_assignments_for_file(filepath))
+    elif needs_dssp:
+        set_dssp_assignments(None)
+
     output_lines: list[str] = []
     output_lines.append(f"# pydangle: Query string: {commands}")
 
@@ -532,5 +552,9 @@ def process_measurement_commands(
                 )
                 if line is not None:
                     output_lines.append(line)
+
+    # Clean up DSSP state
+    if needs_dssp:
+        set_dssp_assignments(None)
 
     return output_lines

@@ -52,6 +52,8 @@ class TestLabelRegistry:
             "rama3",
             "rama4",
             "rama5",
+            "dssp",
+            "dssp3",
         }
         assert set(LABEL_REGISTRY.keys()) == expected
 
