@@ -104,15 +104,40 @@ def prepare_dangle_files(
 # ---------------------------------------------------------------------------
 
 
-def run_pydangle_batch(pdb_dir: str) -> tuple[float, str]:
-    """Run pydangle on entire directory, return (elapsed_seconds, stdout)."""
-    t0 = time.perf_counter()
-    result = subprocess.run(
-        ["pydangle-biopython", "-c", PYDANGLE_MEASUREMENTS, "-d", pdb_dir],
-        capture_output=True,
-        text=True,
-    )
-    elapsed = time.perf_counter() - t0
+def run_pydangle_batch(
+    pdb_dir: str,
+    pdb_files: list[str],
+    force_pdb: bool = False,
+) -> tuple[float, str]:
+    """Run pydangle on file set, return (elapsed_seconds, stdout)."""
+    if force_pdb:
+        # Extensionless files: write a temp file list and use -f -p
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False
+        ) as tf:
+            tf.write("\n".join(pdb_files) + "\n")
+            list_path = tf.name
+        try:
+            t0 = time.perf_counter()
+            result = subprocess.run(
+                [
+                    "pydangle-biopython", "-p",
+                    "-c", PYDANGLE_MEASUREMENTS, "-f", list_path,
+                ],
+                capture_output=True,
+                text=True,
+            )
+            elapsed = time.perf_counter() - t0
+        finally:
+            os.unlink(list_path)
+    else:
+        t0 = time.perf_counter()
+        result = subprocess.run(
+            ["pydangle-biopython", "-c", PYDANGLE_MEASUREMENTS, "-d", pdb_dir],
+            capture_output=True,
+            text=True,
+        )
+        elapsed = time.perf_counter() - t0
     if result.returncode != 0:
         print(f"pydangle batch failed: {result.stderr}", file=sys.stderr)
     return elapsed, result.stdout
@@ -132,10 +157,14 @@ def run_dangle_batch(pdb_files: list[str]) -> tuple[float, str]:
     return elapsed, result.stdout
 
 
-def run_single(tool: str, filepath: str) -> tuple[float, str]:
+def run_single(
+    tool: str, filepath: str, force_pdb: bool = False,
+) -> tuple[float, str]:
     """Run a single file through one tool, return (elapsed, stdout)."""
     if tool == "pydangle":
         cmd = ["pydangle-biopython", "-c", PYDANGLE_MEASUREMENTS, filepath]
+        if force_pdb:
+            cmd.insert(1, "-p")
     else:
         cmd = ["dangle", DANGLE_MEASUREMENTS, filepath]
     t0 = time.perf_counter()
@@ -332,7 +361,7 @@ def print_report(
 
     # -- Batch timing --
     print(sep)
-    print("BATCH TIMING (full top100 set)")
+    print("BATCH TIMING")
     print(sep)
     for tool in ["pydangle", "dangle"]:
         times = batch_times[tool]
@@ -479,12 +508,23 @@ def main() -> None:
         print(f"Error: directory not found: {pdb_dir}", file=sys.stderr)
         sys.exit(1)
 
+    # Try .pdb files first; fall back to all files (extensionless PDBs)
     pdb_files = sorted(glob.glob(os.path.join(pdb_dir, "*.pdb")))
+    force_pdb = False
     if not pdb_files:
-        print(f"Error: no .pdb files in {pdb_dir}", file=sys.stderr)
+        pdb_files = sorted(
+            os.path.join(pdb_dir, f)
+            for f in os.listdir(pdb_dir)
+            if os.path.isfile(os.path.join(pdb_dir, f))
+        )
+        force_pdb = True
+    if not pdb_files:
+        print(f"Error: no files in {pdb_dir}", file=sys.stderr)
         sys.exit(1)
 
     print(f"Benchmark: {len(pdb_files)} PDB files from {pdb_dir}")
+    if force_pdb:
+        print("  (extensionless files detected — forcing PDB format)")
     print(f"Measurements: {PYDANGLE_MEASUREMENTS}")
     print()
 
@@ -492,7 +532,7 @@ def main() -> None:
     dangle_files, tmp_dir = prepare_dangle_files(pdb_files)
 
     try:
-        _run_benchmark(pdb_dir, pdb_files, dangle_files, args)
+        _run_benchmark(pdb_dir, pdb_files, dangle_files, args, force_pdb)
     finally:
         if tmp_dir:
             shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -503,6 +543,7 @@ def _run_benchmark(
     pdb_files: list[str],
     dangle_files: list[str],
     args: argparse.Namespace,
+    force_pdb: bool = False,
 ) -> None:
     """Run the benchmark after preprocessing."""
     # -- Batch timing --
@@ -511,7 +552,7 @@ def _run_benchmark(
 
     for i in range(BATCH_REPEATS):
         print(f"  Batch run {i + 1}/{BATCH_REPEATS} ...", end="", flush=True)
-        t, out = run_pydangle_batch(pdb_dir)
+        t, out = run_pydangle_batch(pdb_dir, pdb_files, force_pdb)
         batch_times["pydangle"].append(t)
         last_output["pydangle"] = out
         print(f" pydangle={t:.3f}s", end="", flush=True)
@@ -538,7 +579,7 @@ def _run_benchmark(
                     file=sys.stderr,
                 )
             f = pdb_files[idx]
-            t, _ = run_single("pydangle", f)
+            t, _ = run_single("pydangle", f, force_pdb)
             per_file_times["pydangle"][f] = t
             t, _ = run_single("dangle", dangle_files[idx])
             per_file_times["dangle"][f] = t

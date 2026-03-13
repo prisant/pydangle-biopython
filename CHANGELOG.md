@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- docs: add top500H multiprocessing scaling results to BENCHMARK.md (b59adcd)
+- feat: benchmark script supports extensionless PDB files + top500H results (9026daa)
+- docs: add top500H multiprocessing scaling results to BENCHMARK.md (c396980)
 - docs: add multiprocessing scaling results to BENCHMARK.md (8644d07)
 - test: add parallel regression test on 1ubq.pdb (96d03ad)
 - refactor: revert bare -j to require explicit count (-j 0 for auto-detect) (83ba3f5)

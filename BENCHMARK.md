@@ -186,6 +186,60 @@ The same alternate conformation structures (1ctj, 1ifc, 1lit) plus
 additional residues in 1ifc where the H-added file has larger alt conf
 regions.
 
+## Correctness: top500H (with hydrogens)
+
+| Metric                  | Count            |
+|-------------------------|------------------|
+| Rows matched            | 109,823          |
+| Rows agreeing (≤ 0.01°) | 104,896 (95.5%) |
+| Coverage diffs          | 4,739            |
+| Value mismatches        | 188              |
+| Rows only in pydangle   | 19               |
+| Rows only in dangle     | 2                |
+
+### Timing
+
+| Tool     | Mean     | Min     | Max      | Runs |
+|----------|----------|---------|----------|------|
+| pydangle | 62.59 s  | 59.88 s | 65.88 s  | 3    |
+| dangle   | 32.14 s  | 31.52 s | 32.92 s  | 3    |
+
+**pydangle / dangle = 1.95x**
+
+### Dangle preprocessing
+
+Same preprocessing as top100H — all 500 files required chain ID fixes
+and hydrogen stripping for dangle compatibility.  Pydangle handles
+the original extensionless H-added files natively with `-p` (force PDB
+format).
+
+### Coverage diffs (4,739)
+
+Same pattern as top100H at larger scale: pydangle computes values at
+chain break boundaries where dangle reports `__?__`, likely where
+Reduce's modifications trigger dangle's chain break detection.
+
+### Value mismatches (188)
+
+Alternate conformation selection differences between BioPython and
+dangle, the same root cause as top100.  The larger dataset surfaces
+more structures with extensive alternate conformations (e.g. 1bi5H
+with 20 affected residues, 1dosAH with multiple chain break boundary
+regions).
+
+### Rows only in pydangle (+19)
+
+Chain break boundary residues where pydangle computes measurements
+based on CA–CA distance while dangle suppresses them due to sequence
+numbering gaps.  Includes 1aacH (same as top100) plus 1dosAH (10
+residues across multiple chain breaks) and others.
+
+### Rows only in dangle (+2)
+
+Two residues (1dinH A:233 SER, 1lstH A:240 LYS) where dangle computes
+values that pydangle does not — likely terminal residues where the
+two tools disagree on chain extent.
+
 ## Resilient PDB parsing
 
 Three H-added files (1benABH, 1dadH, 1etmH) trigger BioPython parser
@@ -208,6 +262,9 @@ python scripts/benchmark.py --skip-per-file
 # Benchmark on hydrogen-added structures
 python scripts/benchmark.py --pdb-dir /path/to/top100H
 
+# Extensionless PDB files (auto-detected, forced PDB format)
+python scripts/benchmark.py --pdb-dir /path/to/top500H --skip-per-file
+
 # Custom tolerance
 python scripts/benchmark.py --tolerance 0.05
 ```
@@ -215,6 +272,8 @@ python scripts/benchmark.py --tolerance 0.05
 The benchmark script (`scripts/benchmark.py`) handles all
 preprocessing automatically.  It detects files needing chain ID fixes
 or hydrogen stripping, creates temporary preprocessed copies for
-dangle, and cleans them up after the run.  Row matching tolerates
-chain ID mismatches between the two tools by falling back to
-chain-ID-free keys when exact keys don't match.
+dangle, and cleans them up after the run.  Directories with
+extensionless PDB files (e.g. top500H) are auto-detected and processed
+with forced PDB format.  Row matching tolerates chain ID mismatches
+between the two tools by falling back to chain-ID-free keys when exact
+keys don't match.
