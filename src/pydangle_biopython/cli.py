@@ -227,10 +227,12 @@ def main(argv: list[str] | None = None) -> int:
         "--jobs",
         type=int,
         default=1,
+        nargs="?",
+        const=0,
         metavar="N",
         help=(
-            "Number of parallel worker processes (default: 1). "
-            "Use 0 for auto-detection (one per CPU core)."
+            "Parallel worker processes. -j alone auto-detects CPU cores; "
+            "-j N uses exactly N workers. Default (no flag): serial."
         ),
     )
 

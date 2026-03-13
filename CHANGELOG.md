@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add multiprocessing support (-j/--jobs) for parallel file processing (4f1030c)
+- feat: bare -j flag auto-detects CPU cores (4ee2b7d)
+- feat: add multiprocessing support (-j/--jobs) for parallel file processing (e315c02)
 - feat: resilient PDB parsing and benchmark improvements (eb6c20a)
 - docs: update BENCHMARK.md with detailed mismatch analysis (57e2a71)
 - docs: add BENCHMARK.md with performance and correctness results (c4f215e)
