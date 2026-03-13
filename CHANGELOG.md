@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- test: add parallel regression test on 1ubq.pdb (7ce7136)
+- docs: add multiprocessing scaling results to BENCHMARK.md (b18a6b4)
+- test: add parallel regression test on 1ubq.pdb (96d03ad)
 - refactor: revert bare -j to require explicit count (-j 0 for auto-detect) (83ba3f5)
 - feat: bare -j flag auto-detects CPU cores (25cb34e)
 - feat: add multiprocessing support (-j/--jobs) for parallel file processing (e315c02)

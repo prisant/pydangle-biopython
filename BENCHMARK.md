@@ -43,6 +43,27 @@ sets.
 5 slowest files (pydangle): 1cpc (0.59 s), 1luc (0.58 s),
 1xyz (0.57 s), 2olb (0.53 s), 1kap (0.50 s).
 
+## Multiprocessing scaling
+
+Parallel file processing with `-j`/`--jobs` on **top100pdb** using
+`phi; psi; omega; tau; chi1; dssp; rama_category` (7 measurements).
+Tested on an 8-core Intel NUC (Linux 6.17, Python 3.12).
+
+| Flag    | Workers        | Wall time | Speedup | Output lines |
+|---------|----------------|-----------|---------|--------------|
+| `-j 1`  | 1 (serial)     | 52.3 s    | 1.0x   | 21,107       |
+| `-j 2`  | 2              | 28.6 s    | 1.8x   | 21,107       |
+| `-j 4`  | 4              | 19.6 s    | 2.7x   | 21,107       |
+| `-j 0`  | 8 (auto-detect)| 20.0 s    | 2.6x   | 21,107       |
+
+All parallel outputs are byte-identical to serial output.  Good scaling
+through 4 cores, then diminishing returns at 8 — likely because DSSP
+(external `mkdssp` process) and I/O become bottlenecks.  The sweet spot
+on this machine is `-j 4`.
+
+Extrapolating to the top2018 dataset (12,125 files): serial ~105 min,
+`-j 4` ~39 min.
+
 ## Correctness: top100pdb
 
 | Metric                  | Count           |
