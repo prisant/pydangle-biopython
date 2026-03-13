@@ -192,3 +192,32 @@ class TestCLI:
         assert ret == 1
         stderr = capsys.readouterr().err
         assert "--jobs" in stderr
+
+    # -----------------------------------------------------------------------
+    # Parallel regression: real structure, broad command set
+    # -----------------------------------------------------------------------
+
+    def test_parallel_regression_1ubq(self, capsys):
+        """Parallel output on 1ubq.pdb must be identical to serial output.
+
+        Uses a broad command set (geometric + labels + DSSP) across
+        multiple copies to exercise ordering and data integrity.
+        """
+        import os
+
+        ubq = os.path.join(
+            os.path.dirname(__file__), os.pardir, "examples", "1ubq.pdb"
+        )
+        if not os.path.isfile(ubq):
+            pytest.skip("examples/1ubq.pdb not found")
+
+        cmds = "phi; psi; omega; tau; chi1; rama_category; is_cis; dssp"
+        files = [ubq, ubq, ubq]
+
+        main(["-c", cmds, "-j", "1"] + files)
+        serial_out = capsys.readouterr().out
+
+        main(["-c", cmds, "-j", "2"] + files)
+        parallel_out = capsys.readouterr().out
+
+        assert serial_out == parallel_out
