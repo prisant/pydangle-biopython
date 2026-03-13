@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: bare -j flag auto-detects CPU cores (4ee2b7d)
+- refactor: revert bare -j to require explicit count (-j 0 for auto-detect) (4c1fa1d)
+- feat: bare -j flag auto-detects CPU cores (25cb34e)
 - feat: add multiprocessing support (-j/--jobs) for parallel file processing (e315c02)
 - feat: resilient PDB parsing and benchmark improvements (eb6c20a)
 - docs: update BENCHMARK.md with detailed mismatch analysis (57e2a71)

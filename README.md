@@ -79,7 +79,7 @@ pydangle-biopython -c 'phi; psi' -g '**/*.pdb'
 pydangle-biopython -c 'phi; psi' -d /data/structures/
 
 # Parallel processing (auto-detect CPU cores)
-pydangle-biopython -j -c 'phi; psi' -d /data/structures/
+pydangle-biopython -j 0 -c 'phi; psi' -d /data/structures/
 
 # Parallel processing (4 workers)
 pydangle-biopython -j 4 -c 'phi; psi; omega; tau' -d /data/structures/

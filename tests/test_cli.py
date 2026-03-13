@@ -185,12 +185,6 @@ class TestCLI:
         output = capsys.readouterr().out
         assert "pydangle" in output
 
-    def test_jobs_bare_flag_auto(self, pdb_file, capsys):
-        """Bare ``-j`` (no number) auto-detects cores."""
-        ret = main(["-c", "phi; psi", pdb_file, "-j"])
-        assert ret == 0
-        output = capsys.readouterr().out
-        assert "pydangle" in output
 
     def test_jobs_negative_error(self, capsys):
         """Negative --jobs value returns error."""
