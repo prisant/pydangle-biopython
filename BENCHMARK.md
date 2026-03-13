@@ -56,10 +56,20 @@ Tested on an 8-core Intel NUC (Linux 6.17, Python 3.12).
 | `-j 4`  | 4              | 19.6 s    | 2.7x   | 21,107       |
 | `-j 0`  | 8 (auto-detect)| 20.0 s    | 2.6x   | 21,107       |
 
-All parallel outputs are byte-identical to serial output.  Good scaling
-through 4 cores, then diminishing returns at 8 — likely because DSSP
-(external `mkdssp` process) and I/O become bottlenecks.  The sweet spot
-on this machine is `-j 4`.
+### top500H (500 files, hydrogen-added, same measurements)
+
+| Flag    | Workers        | Wall time | Speedup | Output lines |
+|---------|----------------|-----------|---------|--------------|
+| `-j 1`  | 1 (serial)     | 70.0 s    | 1.0x   | 110,396      |
+| `-j 2`  | 2              | 38.4 s    | 1.8x   | 110,396      |
+| `-j 4`  | 4              | 23.6 s    | 3.0x   | 110,396      |
+| `-j 0`  | 8 (auto-detect)| 22.2 s    | 3.2x   | 110,396      |
+
+All parallel outputs are byte-identical to serial output in both
+benchmark sets.  Good scaling through 4 cores, then diminishing returns
+at 8 — likely because DSSP (external `mkdssp` process) and I/O become
+bottlenecks.  Scaling improves slightly with more files (3.2x at 500
+files vs 2.7x at 100 files for `-j 4`) as work distributes more evenly.
 
 Extrapolating to the top2018 dataset (12,125 files): serial ~105 min,
 `-j 4` ~39 min.

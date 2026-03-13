@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- docs: add multiprocessing scaling results to BENCHMARK.md (b18a6b4)
+- docs: add top500H multiprocessing scaling results to BENCHMARK.md (b59adcd)
+- docs: add multiprocessing scaling results to BENCHMARK.md (8644d07)
 - test: add parallel regression test on 1ubq.pdb (96d03ad)
 - refactor: revert bare -j to require explicit count (-j 0 for auto-detect) (83ba3f5)
 - feat: bare -j flag auto-detects CPU cores (25cb34e)
