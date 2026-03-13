@@ -78,6 +78,12 @@ pydangle-biopython -c 'phi; psi' -g '**/*.pdb'
 # Bulk input: recursive directory search
 pydangle-biopython -c 'phi; psi' -d /data/structures/
 
+# Parallel processing (use all CPU cores)
+pydangle-biopython -j 0 -c 'phi; psi' -d /data/structures/
+
+# Parallel processing (4 workers)
+pydangle-biopython -j 4 -c 'phi; psi; omega; tau' -d /data/structures/
+
 # Residue classification labels
 pydangle-biopython -c 'phi; psi; rama_category; is_cis' structure.pdb
 
@@ -160,7 +166,8 @@ Pydangle extends Java Dangle with residue classification labels (rama3–6,
 cis/trans, chirality, atom completeness), DSSP secondary structure
 integration, mmCIF input support, multi-file processing, flexible
 bulk input (file lists, stdin piping, Python glob patterns, recursive
-directory search), and resilient PDB parsing that handles files
+directory search), multiprocessing for parallel file processing
+(``-j``/``--jobs``), and resilient PDB parsing that handles files
 (e.g. Reduce hydrogen-added PDBs) that crash or confuse other parsers.
 Java Dangle includes validation measurements (cbdev, hadev, nhdev, codev),
 disulfide analysis, and nucleic acid diagnostics (pperp, pucker, suitefit)

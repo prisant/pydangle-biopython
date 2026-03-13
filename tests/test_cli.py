@@ -153,3 +153,41 @@ class TestCLI:
         with pytest.raises(SystemExit, match="0"):
             main(["--version"])
         assert __version__ in capsys.readouterr().out
+
+    # -----------------------------------------------------------------------
+    # Multiprocessing (-j / --jobs)
+    # -----------------------------------------------------------------------
+
+    def test_jobs_flag_serial(self, pdb_file, capsys):
+        """``-j 1`` produces the same output as the default."""
+        main(["-c", "phi; psi", pdb_file])
+        default_out = capsys.readouterr().out
+
+        main(["-c", "phi; psi", "-j", "1", pdb_file])
+        serial_out = capsys.readouterr().out
+
+        assert default_out == serial_out
+
+    def test_jobs_flag_parallel(self, pdb_file, capsys):
+        """``-j 2`` on multiple files produces correct output."""
+        main(["-c", "phi; psi", pdb_file, pdb_file])
+        serial_out = capsys.readouterr().out
+
+        main(["-c", "phi; psi", "-j", "2", pdb_file, pdb_file])
+        parallel_out = capsys.readouterr().out
+
+        assert serial_out == parallel_out
+
+    def test_jobs_zero_auto(self, pdb_file, capsys):
+        """``-j 0`` auto-detects cores and doesn't crash."""
+        ret = main(["-c", "phi; psi", "-j", "0", pdb_file])
+        assert ret == 0
+        output = capsys.readouterr().out
+        assert "pydangle" in output
+
+    def test_jobs_negative_error(self, capsys):
+        """Negative --jobs value returns error."""
+        ret = main(["-j", "-1", "dummy.pdb"])
+        assert ret == 1
+        stderr = capsys.readouterr().err
+        assert "--jobs" in stderr

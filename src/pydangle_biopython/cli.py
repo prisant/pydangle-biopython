@@ -1,6 +1,7 @@
 """Command-line interface for pydangle-biopython."""
 
 import argparse
+import multiprocessing
 import os
 import sys
 import tempfile
@@ -76,6 +77,54 @@ def _guess_format(filepath: str) -> str:
 # ---------------------------------------------------------------------------
 
 DEFAULT_COMMANDS = "phi; psi; chi1; chi2; chi3; chi4"
+
+
+# ---------------------------------------------------------------------------
+# Per-file processing (top-level for picklability)
+# ---------------------------------------------------------------------------
+
+
+def _process_one_file(args_tuple: tuple[str, str, str]) -> list[str]:
+    """Process a single structure file.
+
+    Designed as a top-level function for use with :func:`multiprocessing.Pool`.
+
+    Parameters
+    ----------
+    args_tuple : tuple[str, str, str]
+        ``(filepath, file_format, command_string)`` where *file_format* is
+        ``'pdb'``, ``'cif'``, or ``''`` (auto-detect).
+
+    Returns
+    -------
+    list[str]
+        Output lines for this file.
+    """
+    filepath, file_format, command_string = args_tuple
+    if not file_format:
+        file_format = _guess_format(filepath)
+    basename = os.path.basename(filepath)
+
+    try:
+        if file_format == "cif":
+            struct_parser: Any = MMCIFParser(QUIET=True)  # type: ignore[no-untyped-call]
+            structure = struct_parser.get_structure("X", filepath)
+        else:
+            structure = _parse_pdb_resilient(filepath)
+
+        return process_measurement_commands(
+            basename,
+            structure,
+            command_string,
+            filepath=filepath,
+        )
+    except Exception as exc:
+        print(
+            f"pydangle-biopython: warning: failed to process "
+            f"{basename}: {exc}",
+            file=sys.stderr,
+        )
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +222,18 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
 
+    ap.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=1,
+        metavar="N",
+        help=(
+            "Number of parallel worker processes (default: 1). "
+            "Use 0 for auto-detection (one per CPU core)."
+        ),
+    )
+
     format_group = ap.add_mutually_exclusive_group()
     format_group.add_argument(
         "-p",
@@ -192,6 +253,17 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     args = ap.parse_args(argv)
+
+    # Resolve jobs count
+    jobs: int = args.jobs
+    if jobs < 0:
+        print(
+            "pydangle-biopython: error: --jobs must be >= 0",
+            file=sys.stderr,
+        )
+        return 1
+    if jobs == 0:
+        jobs = os.cpu_count() or 1
 
     # Collect files from all input sources
     try:
@@ -227,33 +299,36 @@ def main(argv: list[str] | None = None) -> int:
     # Process each file
     total = len(all_files)
     show_progress = total > 10 and sys.stderr.isatty()
-    for idx, filepath in enumerate(all_files):
-        if show_progress:
-            print(
-                f"\r[{idx + 1}/{total}] {os.path.basename(filepath)}",
-                end="",
-                file=sys.stderr,
+    file_format: str = args.file_format or ""
+    command_string: str = args.command_string
+
+    if jobs == 1:
+        # Serial processing (original behaviour, no multiprocessing overhead)
+        for idx, filepath in enumerate(all_files):
+            if show_progress:
+                print(
+                    f"\r[{idx + 1}/{total}] {os.path.basename(filepath)}",
+                    end="",
+                    file=sys.stderr,
+                )
+            output_lines = _process_one_file(
+                (filepath, file_format, command_string),
             )
-        file_format: str = args.file_format or _guess_format(filepath)
-        basename = os.path.basename(filepath)
-
-        if file_format == "cif":
-            struct_parser: Any = MMCIFParser(  # type: ignore[no-untyped-call]
-                QUIET=True,
-            )
-            structure = struct_parser.get_structure("X", filepath)
-        else:
-            structure = _parse_pdb_resilient(filepath)
-
-        output_lines = process_measurement_commands(
-            basename,
-            structure,
-            args.command_string,
-            filepath=filepath,
-        )
-
-        for line in output_lines:
-            print(line)
+            for line in output_lines:
+                print(line)
+    else:
+        # Parallel processing
+        work = [(fp, file_format, command_string) for fp in all_files]
+        with multiprocessing.Pool(jobs) as pool:
+            for idx, lines in enumerate(pool.imap(_process_one_file, work)):
+                if show_progress:
+                    print(
+                        f"\r[{idx + 1}/{total}]",
+                        end="",
+                        file=sys.stderr,
+                    )
+                for line in lines:
+                    print(line)
 
     if show_progress:
         print("", file=sys.stderr)  # newline after progress

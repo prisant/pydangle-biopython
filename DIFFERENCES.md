@@ -54,6 +54,8 @@ following the IUPAC-IUB 1970 convention.  Omega is reported on residue *i*
 - **Bulk input methods** — file lists (`-f`), stdin piping (`-f -`),
   Python glob patterns (`-g`), and recursive directory search (`-d`)
   for processing large numbers of structures without shell ARG_MAX limits.
+- **Parallel processing** — multiprocessing support (`-j`/`--jobs`) for
+  processing large datasets across multiple CPU cores.
 - **mmCIF input support** — reads both PDB and mmCIF formats via BioPython.
 - **Distance-based chain break detection** — uses CA–CA distance (< 4.6 Å)
   rather than residue sequence numbering to identify chain breaks.
