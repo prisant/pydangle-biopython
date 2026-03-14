@@ -92,9 +92,18 @@ pydangle-biopython -c 'phi; psi; rama_category; has_all_mc; has_all_sc' structur
 
 # DSSP secondary structure (requires mkdssp on PATH)
 pydangle-biopython -c 'phi; psi; dssp; dssp3; rama_category' structure.pdb
+
+# JSONL output (one JSON object per line)
+pydangle-biopython -o jsonl -c 'phi; psi; rama_category' structure.pdb
+
+# JSONL piped to jq for filtering
+pydangle-biopython -o jsonl -c 'phi; psi; rama_category' structure.pdb \
+  | jq 'select(.rama_category=="General")'
 ```
 
 ## Output format
+
+### CSV (default)
 
 Output is colon-separated with one line per residue:
 
@@ -110,6 +119,19 @@ For example:
 
 Lines beginning with `#` are header comments.  Unknown or unmeasurable values
 are reported as `__?__`.
+
+### JSONL (`-o jsonl`)
+
+With `-o jsonl`, output is one JSON object per line (JSON Lines format).
+Each object contains `file`, `model`, `chain`, `resnum`, `ins`, `resname`,
+plus one key per measurement.  Numeric values are JSON numbers, labels are
+strings, and unmeasurable values are `null`.
+
+```
+{"file":"1ubq.pdb","model":1,"chain":"A","resnum":2,"ins":" ","resname":"GLN","phi":-91.02,"psi":138.264,"rama_category":"General"}
+```
+
+JSONL streams nicely, works natively with `jq`, and compresses well with gzip.
 
 ## Measurement types
 
@@ -164,11 +186,12 @@ formatting.
 
 Pydangle extends Java Dangle with residue classification labels (rama3–6,
 cis/trans, chirality, atom completeness), DSSP secondary structure
-integration, mmCIF input support, multi-file processing, flexible
-bulk input (file lists, stdin piping, Python glob patterns, recursive
-directory search), multiprocessing for parallel file processing
-(``-j``/``--jobs``), and resilient PDB parsing that handles files
-(e.g. Reduce hydrogen-added PDBs) that crash or confuse other parsers.
+integration, JSONL output format (`-o jsonl`), mmCIF input support,
+multi-file processing, flexible bulk input (file lists, stdin piping,
+Python glob patterns, recursive directory search), multiprocessing for
+parallel file processing (``-j``/``--jobs``), and resilient PDB parsing
+that handles files (e.g. Reduce hydrogen-added PDBs) that crash or
+confuse other parsers.
 Java Dangle includes validation measurements (cbdev, hadev, nhdev, codev),
 disulfide analysis, and nucleic acid diagnostics (pperp, pucker, suitefit)
 not yet in pydangle.

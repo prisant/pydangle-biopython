@@ -84,23 +84,24 @@ DEFAULT_COMMANDS = "phi; psi; chi1; chi2; chi3; chi4"
 # ---------------------------------------------------------------------------
 
 
-def _process_one_file(args_tuple: tuple[str, str, str]) -> list[str]:
+def _process_one_file(args_tuple: tuple[str, str, str, str]) -> list[str]:
     """Process a single structure file.
 
     Designed as a top-level function for use with :func:`multiprocessing.Pool`.
 
     Parameters
     ----------
-    args_tuple : tuple[str, str, str]
-        ``(filepath, file_format, command_string)`` where *file_format* is
-        ``'pdb'``, ``'cif'``, or ``''`` (auto-detect).
+    args_tuple : tuple[str, str, str, str]
+        ``(filepath, file_format, command_string, output_format)`` where
+        *file_format* is ``'pdb'``, ``'cif'``, or ``''`` (auto-detect)
+        and *output_format* is ``'csv'`` or ``'jsonl'``.
 
     Returns
     -------
     list[str]
         Output lines for this file.
     """
-    filepath, file_format, command_string = args_tuple
+    filepath, file_format, command_string, output_format = args_tuple
     if not file_format:
         file_format = _guess_format(filepath)
     basename = os.path.basename(filepath)
@@ -117,6 +118,7 @@ def _process_one_file(args_tuple: tuple[str, str, str]) -> list[str]:
             structure,
             command_string,
             filepath=filepath,
+            output_format=output_format,
         )
     except Exception as exc:
         print(
@@ -234,6 +236,18 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
 
+    ap.add_argument(
+        "-o",
+        "--output-format",
+        choices=["csv", "jsonl"],
+        default="csv",
+        dest="output_format",
+        help=(
+            "Output format: csv (colon-separated, default) or "
+            "jsonl (one JSON object per line)."
+        ),
+    )
+
     format_group = ap.add_mutually_exclusive_group()
     format_group.add_argument(
         "-p",
@@ -301,6 +315,7 @@ def main(argv: list[str] | None = None) -> int:
     show_progress = total > 10 and sys.stderr.isatty()
     file_format: str = args.file_format or ""
     command_string: str = args.command_string
+    output_format: str = args.output_format
 
     if jobs == 1:
         # Serial processing (original behaviour, no multiprocessing overhead)
@@ -312,13 +327,16 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
             output_lines = _process_one_file(
-                (filepath, file_format, command_string),
+                (filepath, file_format, command_string, output_format),
             )
             for line in output_lines:
                 print(line)
     else:
         # Parallel processing
-        work = [(fp, file_format, command_string) for fp in all_files]
+        work = [
+            (fp, file_format, command_string, output_format)
+            for fp in all_files
+        ]
         with multiprocessing.Pool(jobs) as pool:
             for idx, lines in enumerate(pool.imap(_process_one_file, work)):
                 if show_progress:

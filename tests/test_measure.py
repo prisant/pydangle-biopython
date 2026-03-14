@@ -1,5 +1,6 @@
 """Tests for the pydangle measurement computation module."""
 
+import json
 import math
 
 import pytest
@@ -302,3 +303,38 @@ class TestProcessMeasurementCommands:
         )
         # Should still produce output
         assert len(lines) > 1
+
+    def test_jsonl_no_comment_lines(self, hexapeptide_structure):
+        """JSONL output should not contain comment lines."""
+        lines = process_measurement_commands(
+            "EGIPpd", hexapeptide_structure, "phi; psi",
+            output_format="jsonl",
+        )
+        for line in lines:
+            assert not line.startswith("#")
+
+    def test_jsonl_valid_json(self, hexapeptide_structure):
+        """Each JSONL line should parse as valid JSON."""
+        lines = process_measurement_commands(
+            "EGIPpd", hexapeptide_structure, "phi; psi",
+            output_format="jsonl",
+        )
+        assert len(lines) >= 1
+        for line in lines:
+            json.loads(line)
+
+    def test_jsonl_value_types(self, hexapeptide_structure):
+        """Angles should be float, labels should be str, unknowns should be null."""
+        lines = process_measurement_commands(
+            "EGIPpd", hexapeptide_structure, "phi; psi; rama_category",
+            output_format="jsonl",
+        )
+        for line in lines:
+            record = json.loads(line)
+            # phi/psi are float or None
+            for key in ("phi", "psi"):
+                assert record[key] is None or isinstance(record[key], float)
+            # rama_category is str or None
+            assert record["rama_category"] is None or isinstance(
+                record["rama_category"], str
+            )

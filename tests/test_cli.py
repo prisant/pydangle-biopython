@@ -1,5 +1,7 @@
 """Tests for the pydangle command-line interface."""
 
+import json
+
 import pytest
 
 from pydangle_biopython import __version__
@@ -177,6 +179,64 @@ class TestCLI:
         parallel_out = capsys.readouterr().out
 
         assert serial_out == parallel_out
+
+    # -----------------------------------------------------------------------
+    # JSONL output format (-o jsonl)
+    # -----------------------------------------------------------------------
+
+    def test_jsonl_output(self, pdb_file, capsys):
+        """``-o jsonl`` produces valid JSONL (each line parses as JSON)."""
+        ret = main(["-o", "jsonl", "-c", "phi; psi", pdb_file])
+        assert ret == 0
+        output = capsys.readouterr().out.strip()
+        lines = output.split("\n")
+        assert len(lines) >= 1
+        for line in lines:
+            json.loads(line)  # raises on invalid JSON
+
+    def test_jsonl_has_expected_keys(self, pdb_file, capsys):
+        """JSONL records contain file, model, chain, resnum, ins, resname."""
+        main(["-o", "jsonl", "-c", "phi; psi", pdb_file])
+        output = capsys.readouterr().out.strip()
+        record = json.loads(output.split("\n")[0])
+        for key in ("file", "model", "chain", "resnum", "ins", "resname"):
+            assert key in record
+
+    def test_jsonl_numeric_values(self, pdb_file, capsys):
+        """Geometric measurements are JSON numbers, not strings."""
+        main(["-o", "jsonl", "-c", "phi; psi", pdb_file])
+        output = capsys.readouterr().out.strip()
+        for line in output.split("\n"):
+            record = json.loads(line)
+            if record["phi"] is not None:
+                assert isinstance(record["phi"], float)
+            if record["psi"] is not None:
+                assert isinstance(record["psi"], float)
+
+    def test_jsonl_null_for_unknown(self, pdb_file, capsys):
+        """Unmeasurable values are JSON null."""
+        main(["-o", "jsonl", "-c", "phi; psi", pdb_file])
+        output = capsys.readouterr().out.strip()
+        records = [json.loads(ln) for ln in output.split("\n")]
+        has_null = any(r["phi"] is None or r["psi"] is None for r in records)
+        assert has_null
+
+    def test_jsonl_no_comment_lines(self, pdb_file, capsys):
+        """JSONL output should not contain comment lines."""
+        main(["-o", "jsonl", "-c", "phi; psi", pdb_file])
+        output = capsys.readouterr().out.strip()
+        for line in output.split("\n"):
+            assert not line.startswith("#")
+
+    def test_default_format_unchanged(self, pdb_file, capsys):
+        """No ``-o`` flag gives CSV output (same as ``-o csv``)."""
+        main(["-c", "phi; psi", pdb_file])
+        default_out = capsys.readouterr().out
+
+        main(["-o", "csv", "-c", "phi; psi", pdb_file])
+        csv_out = capsys.readouterr().out
+
+        assert default_out == csv_out
 
     def test_jobs_zero_auto(self, pdb_file, capsys):
         """``-j 0`` auto-detects cores and doesn't crash."""

@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: benchmark script supports extensionless PDB files + top500H results (9026daa)
+- feat: add JSONL output format (-o jsonl) (1272c97)
+- feat: benchmark script supports extensionless PDB files + top500H results (87d7917)
 - docs: add top500H multiprocessing scaling results to BENCHMARK.md (c396980)
 - docs: add multiprocessing scaling results to BENCHMARK.md (8644d07)
 - test: add parallel regression test on 1ubq.pdb (96d03ad)

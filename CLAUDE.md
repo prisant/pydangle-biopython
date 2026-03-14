@@ -82,7 +82,7 @@ has_all_mc/has_all_sc, is_left/is_right
 
 - **property type** — numeric per-residue values (cbdev, mc_bfactor, sc_bfactor)
 - **Input improvements** — ~~file lists, piping~~ (done), web fetch
-- **JSON output** — alternative to colon-separated format
+- ~~**JSON output**~~ — JSONL format via `-o jsonl` (done)
 - ~~**Parallelization**~~ — multiprocessing support (done: `-j`/`--jobs` flag)
 - **More Java Dangle features** — see DIFFERENCES.md
 

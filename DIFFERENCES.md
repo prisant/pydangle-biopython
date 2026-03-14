@@ -56,6 +56,9 @@ following the IUPAC-IUB 1970 convention.  Omega is reported on residue *i*
   for processing large numbers of structures without shell ARG_MAX limits.
 - **Parallel processing** — multiprocessing support (`-j`/`--jobs`) for
   processing large datasets across multiple CPU cores.
+- **JSONL output format** — `-o jsonl` produces one JSON object per line with
+  typed values (floats for angles, strings for labels, null for unknown),
+  suitable for `jq` pipelines and programmatic consumption.
 - **mmCIF input support** — reads both PDB and mmCIF formats via BioPython.
 - **Distance-based chain break detection** — uses CA–CA distance (< 4.6 Å)
   rather than residue sequence numbering to identify chain breaks.

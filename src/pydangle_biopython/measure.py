@@ -6,6 +6,7 @@ specifications and BioPython structure objects.
 
 from __future__ import annotations
 
+import json
 import math
 import random
 from typing import Any
@@ -443,12 +444,44 @@ def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
 # ---------------------------------------------------------------------------
 
 
+def _measurement_value(
+    result: str, cmd: ParsedCommand, unknown_str: str
+) -> float | str | None:
+    """Convert a measurement result string to a typed value for JSON output.
+
+    Parameters
+    ----------
+    result : str
+        The measurement result string.
+    cmd : ParsedCommand
+        The parsed command tuple.
+    unknown_str : str
+        The unknown-value sentinel string.
+
+    Returns
+    -------
+    float, str, or None
+        ``None`` if *result* equals *unknown_str*; ``float`` for geometric
+        measurements (distance/angle/dihedral); ``str`` for labels.
+    """
+    if result == unknown_str:
+        return None
+    function_key = cmd[0]
+    if function_key in ("distance", "angle", "dihedral"):
+        return float(result)
+    return result
+
+
 def process_measurement_for_residue(
     label: str,
     residue_list: list[Any],
     residue_index: int,
     command_list: list[ParsedCommand],
     unknown_str: str = "__?__",
+    output_format: str = "csv",
+    file_label: str = "",
+    model_id: int = 1,
+    chain_id: str = "",
 ) -> str | None:
     """Compute all measurements for a single residue.
 
@@ -462,6 +495,14 @@ def process_measurement_for_residue(
     command_list : list[tuple]
         Parsed command list from :func:`command_string_parser`.
     unknown_str : str
+    output_format : str
+        ``"csv"`` for colon-separated output, ``"jsonl"`` for JSON lines.
+    file_label : str
+        Filename for JSONL output.
+    model_id : int
+        Model number for JSONL output.
+    chain_id : str
+        Chain identifier for JSONL output.
 
     Returns
     -------
@@ -472,9 +513,8 @@ def process_measurement_for_residue(
     if not _is_polymer_residue(residue):
         return None
 
-    res_str = _format_residue_id(residue)
-    out_str = label + res_str
     hit_count = 0
+    results: list[str] = []
 
     for command in command_list:
         result = compute_measurement(
@@ -485,11 +525,31 @@ def process_measurement_for_residue(
         )
         if result != unknown_str:
             hit_count += 1
-        out_str += ":" + result
+        results.append(result)
 
-    if hit_count > 0:
-        return out_str
-    return None
+    if hit_count == 0:
+        return None
+
+    if output_format == "jsonl":
+        res_id = residue.get_id()
+        record: dict[str, Any] = {
+            "file": file_label,
+            "model": model_id,
+            "chain": chain_id,
+            "resnum": res_id[1],
+            "ins": res_id[2],
+            "resname": residue.get_resname(),
+        }
+        for command, result in zip(command_list, results):
+            record[command[1]] = _measurement_value(result, command, unknown_str)
+        return json.dumps(record, separators=(",", ":"))
+
+    # CSV path (original behaviour)
+    res_str = _format_residue_id(residue)
+    out_str = label + res_str
+    for result in results:
+        out_str += ":" + result
+    return out_str
 
 
 def process_measurement_commands(
@@ -498,6 +558,7 @@ def process_measurement_commands(
     commands: str,
     unknown_str: str = "__?__",
     filepath: str | None = None,
+    output_format: str = "csv",
 ) -> list[str]:
     """Process measurement commands on an entire structure.
 
@@ -514,6 +575,9 @@ def process_measurement_commands(
     filepath : str or None
         Path to the structure file on disk.  Required for DSSP
         labels; if None, DSSP labels return *unknown_str*.
+    output_format : str
+        ``"csv"`` for colon-separated output (default),
+        ``"jsonl"`` for JSON lines.
 
     Returns
     -------
@@ -535,11 +599,13 @@ def process_measurement_commands(
         set_dssp_assignments(None)
 
     output_lines: list[str] = []
-    output_lines.append(f"# pydangle: Query string: {commands}")
+    if output_format != "jsonl":
+        output_lines.append(f"# pydangle: Query string: {commands}")
 
     filename_prefix = label + ":"
     for model in structure:
-        model_str = filename_prefix + str(model.id + 1) + ":"
+        model_id = model.id + 1
+        model_str = filename_prefix + str(model_id) + ":"
         for chain_id, residue_list in _build_fragments(model):
             chain_str = model_str + str(chain_id) + ":"
             for i in range(len(residue_list)):
@@ -549,6 +615,10 @@ def process_measurement_commands(
                     i,
                     command_list,
                     unknown_str,
+                    output_format=output_format,
+                    file_label=label,
+                    model_id=model_id,
+                    chain_id=chain_id,
                 )
                 if line is not None:
                     output_lines.append(line)
