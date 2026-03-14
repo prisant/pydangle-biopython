@@ -96,6 +96,23 @@ def label_is_trans(
     return str(abs(omega) >= 30.0)
 
 
+def label_peptide_bond(
+    residue_list: list[Any],
+    index: int,
+    unknown: str,
+) -> str:
+    """Return ``'cis'`` or ``'trans'`` for the peptide bond to this residue.
+
+    A peptide bond is cis when |omega| < 30 degrees, trans otherwise.
+    Returns *unknown* for the first residue in a fragment or if omega
+    cannot be computed.
+    """
+    omega = _compute_omega(residue_list, index)
+    if omega is None:
+        return unknown
+    return "cis" if abs(omega) < 30.0 else "trans"
+
+
 def label_is_gly(
     residue_list: list[Any],
     index: int,
@@ -352,6 +369,23 @@ def label_is_right(
     return str(chi > 0.0)
 
 
+def label_chirality(
+    residue_list: list[Any],
+    index: int,
+    unknown: str,
+) -> str:
+    """Return ``'L'`` or ``'D'`` for the Calpha chirality of the residue.
+
+    Based on the improper dihedral CB-N-C-CA: negative for L-amino acids,
+    positive for D-amino acids.
+    Returns *unknown* for GLY or if CB is missing.
+    """
+    chi = _compute_ca_chirality(residue_list[index])
+    if chi is None:
+        return unknown
+    return "L" if chi < 0.0 else "D"
+
+
 
 # ---------------------------------------------------------------------------
 # Ramachandran category variants
@@ -442,6 +476,7 @@ LabelFunc = Any
 LABEL_REGISTRY: dict[str, LabelFunc] = {
     "is_cis": label_is_cis,
     "is_trans": label_is_trans,
+    "peptide_bond": label_peptide_bond,
     "is_gly": label_is_gly,
     "is_pro": label_is_pro,
     "is_ileval": label_is_ileval,
@@ -450,6 +485,7 @@ LABEL_REGISTRY: dict[str, LabelFunc] = {
     "has_all_sc": label_has_all_sc,
     "is_left": label_is_left,
     "is_right": label_is_right,
+    "chirality": label_chirality,
     "rama_category": label_rama_category,
     "rama6": label_rama_category,
     "rama5": label_rama5,

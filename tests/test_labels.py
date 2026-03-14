@@ -3,6 +3,7 @@
 from pydangle_biopython.labels import (
     LABEL_REGISTRY,
     _compute_omega,
+    label_chirality,
     label_has_all_mc,
     label_has_all_sc,
     label_is_cis,
@@ -13,6 +14,7 @@ from pydangle_biopython.labels import (
     label_is_pro,
     label_is_right,
     label_is_trans,
+    label_peptide_bond,
     label_rama3,
     label_rama4,
     label_rama5,
@@ -39,6 +41,7 @@ class TestLabelRegistry:
         expected = {
             "is_cis",
             "is_trans",
+            "peptide_bond",
             "is_gly",
             "is_pro",
             "is_ileval",
@@ -47,6 +50,7 @@ class TestLabelRegistry:
             "has_all_sc",
             "is_left",
             "is_right",
+            "chirality",
             "rama_category",
             "rama6",
             "rama3",
@@ -186,6 +190,52 @@ class TestPrimitiveLabels:
         """Normal peptide bonds should not be cis."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_is_cis(residue_list, 1, UNK) == "False"
+
+
+class TestPeptideBond:
+    """Test the categorical peptide_bond label."""
+
+    def test_first_residue_unknown(self, hexapeptide_chain):
+        """First residue has no omega; should return unknown."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_peptide_bond(residue_list, 0, UNK) == UNK
+
+    def test_trans_peptide(self, hexapeptide_chain):
+        """Normal peptide bonds should be 'trans'."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_peptide_bond(residue_list, 1, UNK) == "trans"
+
+    def test_consistent_with_is_cis(self, hexapeptide_chain):
+        """peptide_bond should be consistent with is_cis/is_trans."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        for i in range(len(residue_list)):
+            pb = label_peptide_bond(residue_list, i, UNK)
+            cis = label_is_cis(residue_list, i, UNK)
+            trans = label_is_trans(residue_list, i, UNK)
+            if pb == UNK:
+                assert cis == UNK
+                assert trans == UNK
+            elif pb == "cis":
+                assert cis == "True"
+                assert trans == "False"
+            else:
+                assert pb == "trans"
+                assert cis == "False"
+                assert trans == "True"
+
+    def test_peptide_bond_in_output(self, hexapeptide_structure):
+        """peptide_bond should produce cis/trans values in output."""
+        lines = process_measurement_commands(
+            "test",
+            hexapeptide_structure,
+            "peptide_bond",
+        )
+        data_lines = [line for line in lines if not line.startswith("#")]
+        assert len(data_lines) > 0
+        valid = {"cis", "trans", "__?__"}
+        for line in data_lines:
+            value = line.rsplit(":", 1)[-1]
+            assert value in valid, f"Invalid peptide_bond value: {value!r}"
 
 
 class TestRamaCategory:
@@ -385,6 +435,52 @@ class TestChirality:
             parts = line.split(":")
             assert parts[-1] in valid
             assert parts[-2] in valid
+
+
+class TestChiralityLabel:
+    """Test the categorical chirality label."""
+
+    def test_gly_unknown(self, hexapeptide_chain):
+        """GLY (index 1) has no CB; should return unknown."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_chirality(residue_list, 1, UNK) == UNK
+
+    def test_l_amino_acid(self, hexapeptide_chain):
+        """Standard amino acids should be 'L'."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_chirality(residue_list, 0, UNK) == "L"
+
+    def test_consistent_with_is_left(self, hexapeptide_chain):
+        """chirality should be consistent with is_left/is_right."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        for i in range(len(residue_list)):
+            ch = label_chirality(residue_list, i, UNK)
+            left = label_is_left(residue_list, i, UNK)
+            right = label_is_right(residue_list, i, UNK)
+            if ch == UNK:
+                assert left == UNK
+                assert right == UNK
+            elif ch == "L":
+                assert left == "True"
+                assert right == "False"
+            else:
+                assert ch == "D"
+                assert left == "False"
+                assert right == "True"
+
+    def test_chirality_in_output(self, hexapeptide_structure):
+        """chirality should produce L/D values in output."""
+        lines = process_measurement_commands(
+            "test",
+            hexapeptide_structure,
+            "chirality",
+        )
+        data_lines = [line for line in lines if not line.startswith("#")]
+        assert len(data_lines) > 0
+        valid = {"L", "D", "__?__"}
+        for line in data_lines:
+            value = line.rsplit(":", 1)[-1]
+            assert value in valid, f"Invalid chirality value: {value!r}"
 
 
 class TestLabelIntegration:

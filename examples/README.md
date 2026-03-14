@@ -110,6 +110,7 @@ pydangle-biopython -c 'phi; psi' -d examples/
 |---------------|-------|--------------------------------------------------|
 | is_cis        | label | True / False / \_\_?\_\_                         |
 | is_trans       | label | True / False / \_\_?\_\_                         |
+| peptide_bond   | label | cis / trans / \_\_?\_\_                           |
 | is_gly         | label | True / False                                     |
 | is_pro         | label | True / False                                     |
 | is_ileval      | label | True / False                                     |
@@ -118,6 +119,7 @@ pydangle-biopython -c 'phi; psi' -d examples/
 | has_all_sc     | label | True / False / \_\_?\_\_                         |
 | is_left        | label | True / False / \_\_?\_\_                         |
 | is_right       | label | True / False / \_\_?\_\_                         |
+| chirality      | label | L / D / \_\_?\_\_                                |
 | rama_category  | label | General / Gly / IleVal / TransPro / CisPro / PrePro |
 | rama6          | label | (alias for rama_category)                            |
 | rama5          | label | General / Gly / IleVal / Pro / PrePro                |

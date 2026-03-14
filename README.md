@@ -162,7 +162,8 @@ TransPro, CisPro, or PrePro.  Reduced schemes are available as `rama5`
 `rama3` (General, Gly, Pro only, following Lovell et al. 2003).
 
 `is_cis` / `is_trans` classify the peptide bond based on the omega dihedral
-angle (cis when |ω| < 30°).
+angle (cis when |ω| < 30°).  `peptide_bond` provides the same classification
+as a single categorical column returning "cis" or "trans".
 
 `is_gly`, `is_pro`, `is_ileval` identify residue type.  `is_prepro` flags
 residues immediately preceding proline.
@@ -172,7 +173,8 @@ or sidechain heavy atoms are present for each residue.
 
 `is_left` / `is_right` determine Cα chirality from the improper dihedral
 CB–N–C–CA (L-amino acids are negative, D-amino acids positive).  GLY returns
-unknown since it has no CB.
+unknown since it has no CB.  `chirality` provides the same classification
+as a single categorical column returning "L" or "D".
 
 See `examples/README.md` for the complete builtin reference table covering
 protein backbone, sidechain, nucleic acid, and label builtins.

@@ -129,6 +129,7 @@ NUCLEIC_ACID_ANGLES = {
 RESIDUE_LABELS = {
     "is_cis": "label: is_cis",
     "is_trans": "label: is_trans",
+    "peptide_bond": "label: peptide_bond",
     "is_gly": "label: is_gly",
     "is_pro": "label: is_pro",
     "is_ileval": "label: is_ileval",
@@ -137,6 +138,7 @@ RESIDUE_LABELS = {
     "has_all_sc": "label: has_all_sc",
     "is_left": "label: is_left",
     "is_right": "label: is_right",
+    "chirality": "label: chirality",
     "rama_category": "label: rama_category",
     "rama6": "label: rama6",
     "rama5": "label: rama5",

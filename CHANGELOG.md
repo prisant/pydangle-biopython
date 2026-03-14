@@ -5,6 +5,10 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
+- feat: add peptide_bond and chirality categorical label builtins (93dbbb6)
+
+## v0.4.0 — 2026-03-13
+
 - feat: add JSONL output format (-o jsonl) (48c7067)
 - feat: benchmark script supports extensionless PDB files + top500H results (87d7917)
 - docs: add top500H multiprocessing scaling results to BENCHMARK.md (c396980)
