@@ -13,6 +13,7 @@ from pydangle_biopython.labels import (
     label_is_prepro,
     label_is_pro,
     label_is_right,
+    label_is_standard,
     label_is_trans,
     label_peptide_bond,
     label_rama3,
@@ -46,6 +47,7 @@ class TestLabelRegistry:
             "is_pro",
             "is_ileval",
             "is_prepro",
+            "is_standard",
             "has_all_mc",
             "has_all_sc",
             "is_left",
@@ -175,6 +177,17 @@ class TestPrimitiveLabels:
             )
             == UNK
         )
+
+    def test_is_standard_true(self, hexapeptide_chain):
+        """GLU (index 0) is a standard amino acid."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_is_standard(residue_list, 0, UNK) == "True"
+
+    def test_is_standard_all_hexapeptide(self, hexapeptide_chain):
+        """All hexapeptide residues are standard amino acids."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        for i in range(len(residue_list)):
+            assert label_is_standard(residue_list, i, UNK) == "True"
 
     def test_is_cis_first_residue(self, hexapeptide_chain):
         """First residue has no omega; should return unknown."""

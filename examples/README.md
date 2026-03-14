@@ -115,6 +115,7 @@ pydangle-biopython -c 'phi; psi' -d examples/
 | is_pro         | label | True / False                                     |
 | is_ileval      | label | True / False                                     |
 | is_prepro      | label | True / False / \_\_?\_\_                         |
+| is_standard    | label | True / False                                     |
 | has_all_mc     | label | True / False                                     |
 | has_all_sc     | label | True / False / \_\_?\_\_                         |
 | is_left        | label | True / False / \_\_?\_\_                         |

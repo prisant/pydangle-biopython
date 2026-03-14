@@ -45,7 +45,7 @@ following the IUPAC-IUB 1970 convention.  Omega is reported on residue *i*
 - **Residue classification labels** — categorical per-residue annotations
   including Ramachandran category (rama3–6), cis/trans peptide bond
   (is_cis, is_trans, peptide_bond), residue identity (is_gly, is_pro,
-  is_ileval, is_prepro), atom completeness (has_all_mc, has_all_sc),
+  is_ileval, is_prepro, is_standard), atom completeness (has_all_mc, has_all_sc),
   and Cα chirality (is_left, is_right, chirality).
 - **DSSP secondary structure** — dssp (8-state) and dssp3 (3-state)
   labels via external mkdssp, providing hydrogen-bond-based secondary

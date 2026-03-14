@@ -166,7 +166,8 @@ angle (cis when |ω| < 30°).  `peptide_bond` provides the same classification
 as a single categorical column returning "cis" or "trans".
 
 `is_gly`, `is_pro`, `is_ileval` identify residue type.  `is_prepro` flags
-residues immediately preceding proline.
+residues immediately preceding proline.  `is_standard` returns whether the
+residue is one of the 20 standard amino acids.
 
 `has_all_mc` / `has_all_sc` check whether all expected mainchain (N, CA, C, O)
 or sidechain heavy atoms are present for each residue.

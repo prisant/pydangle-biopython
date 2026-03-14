@@ -154,6 +154,22 @@ def label_is_prepro(
     return str(residue_list[index + 1].get_resname() == "PRO")
 
 
+#: The 20 standard amino acid residue names.
+_STANDARD_AA: frozenset[str] = frozenset({
+    "ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "GLY", "HIS", "ILE",
+    "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL",
+})
+
+
+def label_is_standard(
+    residue_list: list[Any],
+    index: int,
+    unknown: str,
+) -> str:
+    """Return ``'True'`` if the residue is one of the 20 standard amino acids."""
+    return str(residue_list[index].get_resname() in _STANDARD_AA)
+
+
 # ---------------------------------------------------------------------------
 # Composite label: Ramachandran category
 # ---------------------------------------------------------------------------
@@ -481,6 +497,7 @@ LABEL_REGISTRY: dict[str, LabelFunc] = {
     "is_pro": label_is_pro,
     "is_ileval": label_is_ileval,
     "is_prepro": label_is_prepro,
+    "is_standard": label_is_standard,
     "has_all_mc": label_has_all_mc,
     "has_all_sc": label_has_all_sc,
     "is_left": label_is_left,

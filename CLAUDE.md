@@ -72,10 +72,10 @@ src/pydangle_biopython/
 - **BioPython** — structure parsing (pip installed)
 - **mkdssp** — DSSP secondary structure (system installed: `apt install dssp`)
 
-## Current label builtins (17)
+## Current label builtins (18)
 
 rama_category/rama6/rama5/rama4/rama3, dssp/dssp3,
-is_cis/is_trans/peptide_bond, is_gly/is_pro/is_ileval/is_prepro,
+is_cis/is_trans/peptide_bond, is_gly/is_pro/is_ileval/is_prepro/is_standard,
 has_all_mc/has_all_sc, is_left/is_right/chirality
 
 ## Planned work
