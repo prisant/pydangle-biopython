@@ -6,7 +6,7 @@ backend.  Measures backbone and sidechain geometry in protein and nucleic
 acid structures from PDB or mmCIF files.
 """
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 from pydangle_biopython.builtins import (
     BUILTIN_COMMANDS as BUILTIN_COMMANDS,

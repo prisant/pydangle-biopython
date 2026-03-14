@@ -5,7 +5,7 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add peptide_bond and chirality categorical label builtins (93dbbb6)
+- feat: add peptide_bond and chirality categorical label builtins (3f6e4cc)
 
 ## v0.4.0 — 2026-03-13
 
