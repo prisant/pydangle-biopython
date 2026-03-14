@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add is_standard label and JSONL analysis script (9ff5e75)
+- docs: add top2018 analysis reports and PDB preprocessing script (572a378)
+- feat: add is_standard label and JSONL analysis script (7d57e63)
 - feat: add peptide_bond and chirality categorical label builtins (3f6e4cc)
 
 ## v0.4.0 — 2026-03-13
