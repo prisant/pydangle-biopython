@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Build ersatz full-structure PDB files for the top2018 dataset.
+"""Build ersatz full-structure PDB files for Richardson Lab datasets.
 
 For each entry in the dataset, creates an "ersatz" PDB by starting with
 the Reduce-processed FH file (which has correct NQH flips on all chains)
-and stripping hydrogens and problematic headers.  Also generates a
-residue mask file from the pruned file.
+and stripping hydrogens and problematic headers.  Also generates per-chain
+residue mask files from the pruned files.
 
 The ersatz files preserve multi-chain context needed for correct DSSP
 secondary structure assignments, with NQH corrections applied to all
@@ -14,16 +14,38 @@ Prerequisites:
     Run scripts/run_reduce.py first to generate {pdbid}FH.pdb files.
 
 Usage:
-    python scripts/build_ersatz_pdbs.py SRC_DIR [-j JOBS]
+    python scripts/build_ersatz_pdbs.py SRC_DIR [-j JOBS] [-s SUFFIX]
+
+Arguments:
+    SRC_DIR     Dataset directory with two-level structure (prefix/pdbid/)
+    -j, --jobs  Number of parallel workers (default: 8)
+    -s, --suffix
+                Pruned file suffix to match (default: pruned_all).
+                Use "pruned_mc" for mainchain-filtered datasets.
+
+                The script searches for files matching the pattern
+                {pdbid}_{chain}_{suffix}.pdb in each entry directory.
+
+Examples:
+    # Full-filtered dataset (default suffix "pruned_all")
+    python scripts/build_ersatz_pdbs.py top2018_pdbs_full_filtered_hom70/
+
+    # Mainchain-filtered dataset
+    python scripts/build_ersatz_pdbs.py top2018_pdbs_mc_filtered_hom70/ -s pruned_mc
 
 Input per entry (e.g., 1a/1a2z/):
-    1a2z.pdb              - original full multi-chain PDB (no H, no flips)
-    1a2zFH.pdb            - Reduce output: full PDB with H + NQH flips
-    1a2z_C_pruned_all.pdb - pruned chain C (for mask generation only)
+    1a2z.pdb              - original full multi-chain PDB
+    1a2zFH.pdb            - Reduce output with H + NQH flips
+    1a2z_C_{suffix}.pdb   - pruned chain (for mask and fragment records)
 
 Output per entry (in-place):
     1a2z_ersatz.pdb       - full PDB with NQH corrections, no H, clean headers
     1a2z_C.mask           - pruned residue list (chain resnum icode)
+
+Note: Some structures contribute multiple quality-filtered chains
+(e.g., 5t5i has chains A, C, G, J, L).  The script processes ALL
+pruned files in each entry directory and generates a separate mask
+file for each chain.
 """
 
 from __future__ import annotations
@@ -78,10 +100,19 @@ def _is_hydrogen(line: str) -> bool:
     return first_nonspace in ("H", "D")
 
 
-def process_entry(entry_dir: Path) -> tuple[str, bool, str, int]:
+def process_entry(
+    entry_dir: Path, suffix: str,
+) -> tuple[str, bool, str, int]:
     """Process a single entry directory.
 
     Creates {pdbid}_ersatz.pdb and {pdbid}_{chain}.mask in the entry dir.
+
+    Parameters
+    ----------
+    entry_dir : Path
+        Entry directory (e.g., .../1a/1a2z/)
+    suffix : str
+        Pruned file suffix (e.g., "pruned_all" or "pruned_mc")
 
     Returns (pdb_id, success, message, n_mask_residues).
     """
@@ -89,12 +120,14 @@ def process_entry(entry_dir: Path) -> tuple[str, bool, str, int]:
 
     # Find input files
     fh_pdb = entry_dir / f"{pdb_id}FH.pdb"
-    pruned_files = list(entry_dir.glob(f"{pdb_id}_*_pruned_all.pdb"))
+    pruned_files = list(
+        entry_dir.glob(f"{pdb_id}_*_{suffix}.pdb")
+    )
 
     if not fh_pdb.exists():
         return (pdb_id, False, "missing FH file", 0)
     if not pruned_files:
-        return (pdb_id, False, "missing pruned PDB", 0)
+        return (pdb_id, False, f"missing pruned PDB (*_{suffix}.pdb)", 0)
 
     try:
         # Build ersatz PDB: FH file with H stripped and headers cleaned
@@ -120,11 +153,11 @@ def process_entry(entry_dir: Path) -> tuple[str, bool, str, int]:
         # (some entries have multiple chains, e.g. 5t5i has A,C,G,J,L)
         total_mask = 0
         chains: list[str] = []
+        pattern = re.compile(
+            rf"{re.escape(pdb_id)}_(\w)_{re.escape(suffix)}\.pdb"
+        )
         for pruned_pdb in pruned_files:
-            chain_match = re.match(
-                rf"{re.escape(pdb_id)}_(\w)_pruned_all\.pdb",
-                pruned_pdb.name,
-            )
+            chain_match = pattern.match(pruned_pdb.name)
             if not chain_match:
                 continue
             target_chain = chain_match.group(1)
@@ -165,13 +198,25 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
             "Build ersatz PDB files from Reduce FH output. "
-            "Strips hydrogens and problematic headers, generates mask files."
+            "Strips hydrogens and problematic headers, generates "
+            "per-chain mask files from pruned PDB files."
         )
     )
-    parser.add_argument("src_dir", type=Path, help="Top2018 dataset directory")
+    parser.add_argument(
+        "src_dir", type=Path,
+        help="Dataset directory (two-level: prefix/pdbid/)",
+    )
     parser.add_argument(
         "-j", "--jobs", type=int, default=8,
         help="Number of parallel workers (default: 8)",
+    )
+    parser.add_argument(
+        "-s", "--suffix", type=str, default="pruned_all",
+        help=(
+            "Pruned file suffix to match (default: pruned_all). "
+            "Use 'pruned_mc' for mainchain-filtered datasets. "
+            "Matches files named {pdbid}_{chain}_{suffix}.pdb"
+        ),
     )
     args = parser.parse_args()
 
@@ -180,6 +225,7 @@ def main() -> None:
         sys.exit(1)
 
     print(f"Scanning {args.src_dir} ...")
+    print(f"Pruned file suffix: {args.suffix}")
     entries = collect_entries(args.src_dir)
     print(f"Found {len(entries)} entries")
 
@@ -193,7 +239,7 @@ def main() -> None:
 
     with ProcessPoolExecutor(max_workers=args.jobs) as pool:
         futures = {
-            pool.submit(process_entry, entry): entry
+            pool.submit(process_entry, entry, args.suffix): entry
             for entry in entries
         }
         for future in as_completed(futures):

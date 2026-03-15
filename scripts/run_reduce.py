@@ -22,7 +22,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 _DEFAULT_HET_DB = os.path.expanduser(
-    "~/bin/reduce_wwPDB_het_dict_160907unx.txt"
+    "~/bin/reduce_wwPDB_het_dict.txt"
 )
 
 

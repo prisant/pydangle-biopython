@@ -13,16 +13,19 @@ set to null, since the neighbor coordinates are unreliable (they failed
 quality filtering).
 
 Neighbor-dependent measurements:
-    phi, omega, is_cis, is_trans  — require residue i-1
-    psi                           — requires residue i+1
-    rama_category                 — requires both (depends on phi and psi)
-    tau, chi1, dssp               — use only residue i (unaffected)
+    phi, omega, is_cis, is_trans, peptide_bond — require residue i-1
+    psi                                        — requires residue i+1
+    rama_category, rama5, rama4, rama3         — require both (phi + psi)
+    tau, chi1, chirality, dssp                 — use only residue i
 
 Usage:
-    python scripts/filter_pruned_residues.py INPUT.jsonl SRC_DIR > OUTPUT.jsonl
+    python scripts/filter_pruned_residues.py INPUT.jsonl SRC_DIR [-s SUFFIX]
 
-SRC_DIR is the top2018 dataset directory containing both .mask files and
-the *_pruned_all.pdb files (for USER INC fragment records).
+Arguments:
+    INPUT.jsonl  Raw pydangle JSONL output
+    SRC_DIR      Dataset directory with .mask files and pruned PDB files
+    -s, --suffix Pruned file suffix (default: pruned_all).
+                 Use "pruned_mc" for mainchain-filtered datasets.
 """
 
 from __future__ import annotations
@@ -50,7 +53,6 @@ def _parse_inc_fragments(
         for line in fh:
             if not line.startswith("USER  INC:"):
                 continue
-            # Parse: "USER  INC: C:   2: : C:   6: :3"
             # Split on ":" gives 7 parts:
             #   [0] chain1  [1] resnum1  [2] icode1
             #   [3] chain2  [4] resnum2  [5] icode2  [6] length
@@ -70,12 +72,20 @@ def _parse_inc_fragments(
 
 def load_masks_and_fragments(
     src_dir: Path,
+    suffix: str,
 ) -> tuple[
     dict[str, set[tuple[str, int, str]]],
     dict[str, set[tuple[str, int, str]]],
     dict[str, set[tuple[str, int, str]]],
 ]:
     """Load masks and parse fragment boundaries from pruned files.
+
+    Parameters
+    ----------
+    src_dir : Path
+        Dataset directory containing mask and pruned files.
+    suffix : str
+        Pruned file suffix (e.g., "pruned_all" or "pruned_mc").
 
     Returns:
         masks: {pdb_id: set of (chain, resnum, icode)}
@@ -110,7 +120,9 @@ def load_masks_and_fragments(
         # (each mask file corresponds to one pruned file)
         entry_dir = mask_file.parent
         chain_id = stem.rsplit("_", 1)[1]
-        pruned_file = entry_dir / f"{pdb_id}_{chain_id}_pruned_all.pdb"
+        pruned_file = (
+            entry_dir / f"{pdb_id}_{chain_id}_{suffix}.pdb"
+        )
         if pdb_id not in frag_starts:
             frag_starts[pdb_id] = set()
             frag_ends[pdb_id] = set()
@@ -124,13 +136,13 @@ def load_masks_and_fragments(
 
 
 # Measurements that require the previous residue (i-1)
-_NEEDS_PREV = {"phi", "omega", "is_cis", "is_trans"}
+_NEEDS_PREV = {"phi", "omega", "is_cis", "is_trans", "peptide_bond"}
 
 # Measurements that require the next residue (i+1)
 _NEEDS_NEXT = {"psi"}
 
 # Measurements that require both neighbors (phi needs i-1, psi needs i+1)
-_NEEDS_BOTH = {"rama_category"}
+_NEEDS_BOTH = {"rama_category", "rama5", "rama4", "rama3"}
 
 
 def null_neighbor_dependent(
@@ -142,6 +154,7 @@ def null_neighbor_dependent(
 
     A residue at a fragment start has no valid i-1 neighbor (it was
     quality-filtered).  A residue at a fragment end has no valid i+1.
+    Only nulls fields that are actually present in the record.
     """
     if is_frag_start:
         for col in _NEEDS_PREV:
@@ -160,7 +173,11 @@ def null_neighbor_dependent(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Filter JSONL to pruned residues using mask files"
+        description=(
+            "Filter JSONL to pruned residues using mask files. "
+            "Nulls neighbor-dependent measurements at fragment "
+            "boundaries defined by USER INC records."
+        )
     )
     parser.add_argument(
         "input_jsonl", type=Path, help="Input JSONL file"
@@ -168,6 +185,13 @@ def main() -> None:
     parser.add_argument(
         "src_dir", type=Path,
         help="Dataset directory with .mask and pruned PDB files",
+    )
+    parser.add_argument(
+        "-s", "--suffix", type=str, default="pruned_all",
+        help=(
+            "Pruned file suffix (default: pruned_all). "
+            "Use 'pruned_mc' for mainchain-filtered datasets."
+        ),
     )
     args = parser.parse_args()
 
@@ -180,10 +204,13 @@ def main() -> None:
         )
         sys.exit(1)
 
-    masks, frag_starts, frag_ends = load_masks_and_fragments(args.src_dir)
+    masks, frag_starts, frag_ends = load_masks_and_fragments(
+        args.src_dir, args.suffix
+    )
     print(
         f"Loaded masks for {len(masks)} PDB entries", file=sys.stderr
     )
+    print(f"Pruned file suffix: {args.suffix}", file=sys.stderr)
 
     kept = 0
     skipped = 0

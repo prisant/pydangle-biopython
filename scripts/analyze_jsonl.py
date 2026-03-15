@@ -761,7 +761,7 @@ def format_text_report(stats: dict[str, Any]) -> str:
             "      if RCSB PDB remediation renamed or split chains"
         )
         lines.append(
-            "      relative to the original dataset. See ISSUES.md"
+            "      relative to the original dataset. See issues"
         )
         lines.append(
             "      for per-entry details."
