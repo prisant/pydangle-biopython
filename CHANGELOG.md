@@ -5,7 +5,7 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add --chain filter and top2018 ersatz preprocessing scripts (67cad2d)
+- feat: add --chain filter and top2018 ersatz preprocessing scripts (10f1b23)
 - docs: add top2018 analysis reports and PDB preprocessing script (c8fce68)
 - feat: add is_standard label and JSONL analysis script (7d57e63)
 - feat: add peptide_bond and chirality categorical label builtins (3f6e4cc)
