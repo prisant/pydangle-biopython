@@ -559,6 +559,7 @@ def process_measurement_commands(
     unknown_str: str = "__?__",
     filepath: str | None = None,
     output_format: str = "csv",
+    chain_filter: set[str] | None = None,
 ) -> list[str]:
     """Process measurement commands on an entire structure.
 
@@ -578,6 +579,9 @@ def process_measurement_commands(
     output_format : str
         ``"csv"`` for colon-separated output (default),
         ``"jsonl"`` for JSON lines.
+    chain_filter : set[str] or None
+        If provided, only emit output for residues in these chain(s).
+        DSSP still runs on the full structure for correct assignments.
 
     Returns
     -------
@@ -607,6 +611,8 @@ def process_measurement_commands(
         model_id = model.id + 1
         model_str = filename_prefix + str(model_id) + ":"
         for chain_id, residue_list in _build_fragments(model):
+            if chain_filter and chain_id not in chain_filter:
+                continue
             chain_str = model_str + str(chain_id) + ":"
             for i in range(len(residue_list)):
                 line = process_measurement_for_residue(
