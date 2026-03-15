@@ -96,17 +96,9 @@ def process_entry(entry_dir: Path) -> tuple[str, bool, str, int]:
     if not pruned_files:
         return (pdb_id, False, "missing pruned PDB", 0)
 
-    pruned_pdb = pruned_files[0]
-    # Extract target chain from filename: {pdb}_{chain}_pruned_all.pdb
-    chain_match = re.match(
-        rf"{re.escape(pdb_id)}_(\w)_pruned_all\.pdb", pruned_pdb.name
-    )
-    if not chain_match:
-        return (pdb_id, False, f"cannot parse chain from {pruned_pdb.name}", 0)
-    target_chain = chain_match.group(1)
-
     try:
         # Build ersatz PDB: FH file with H stripped and headers cleaned
+        # (one ersatz per entry, shared across all chains)
         ersatz_path = entry_dir / f"{pdb_id}_ersatz.pdb"
         atom_count = 0
 
@@ -124,19 +116,33 @@ def process_entry(entry_dir: Path) -> tuple[str, bool, str, int]:
                 if line.startswith("ATOM  "):
                     atom_count += 1
 
-        # Build mask file from pruned PDB
-        mask_residues = _build_mask(pruned_pdb)
-        mask_path = entry_dir / f"{pdb_id}_{target_chain}.mask"
-        with open(mask_path, "w") as fout:
-            for chain_id, resnum, icode in mask_residues:
-                fout.write(f"{chain_id} {resnum} {icode}\n")
+        # Build mask files from ALL pruned PDBs in this entry
+        # (some entries have multiple chains, e.g. 5t5i has A,C,G,J,L)
+        total_mask = 0
+        chains: list[str] = []
+        for pruned_pdb in pruned_files:
+            chain_match = re.match(
+                rf"{re.escape(pdb_id)}_(\w)_pruned_all\.pdb",
+                pruned_pdb.name,
+            )
+            if not chain_match:
+                continue
+            target_chain = chain_match.group(1)
+            chains.append(target_chain)
+
+            mask_residues = _build_mask(pruned_pdb)
+            mask_path = entry_dir / f"{pdb_id}_{target_chain}.mask"
+            with open(mask_path, "w") as fout:
+                for chain_id, resnum, icode in mask_residues:
+                    fout.write(f"{chain_id} {resnum} {icode}\n")
+            total_mask += len(mask_residues)
 
         msg = (
-            f"ok: chain={target_chain}, "
+            f"ok: chains={','.join(chains)}, "
             f"{atom_count} heavy atoms, "
-            f"{len(mask_residues)} mask residues"
+            f"{total_mask} mask residues"
         )
-        return (pdb_id, True, msg, len(mask_residues))
+        return (pdb_id, True, msg, total_mask)
 
     except Exception as exc:
         return (pdb_id, False, str(exc), 0)

@@ -15,8 +15,8 @@ quality filtering).
 Neighbor-dependent measurements:
     phi, omega, is_cis, is_trans  — require residue i-1
     psi                           — requires residue i+1
-    tau, rama_category            — require both i-1 and i+1
-    chi1, dssp                    — use only residue i (unaffected)
+    rama_category                 — requires both (depends on phi and psi)
+    tau, chi1, dssp               — use only residue i (unaffected)
 
 Usage:
     python scripts/filter_pruned_residues.py INPUT.jsonl SRC_DIR > OUTPUT.jsonl
@@ -91,28 +91,34 @@ def load_masks_and_fragments(
     for mask_file in src_dir.rglob("*.mask"):
         stem = mask_file.stem  # e.g., "1a2z_C"
         pdb_id = stem.rsplit("_", 1)[0]
-        residues: set[tuple[str, int, str]] = set()
+        # Merge masks for multi-chain entries (e.g., 5t5i has A,C,G,J,L)
+        if pdb_id not in masks:
+            masks[pdb_id] = set()
         with open(mask_file) as fh:
             for line in fh:
                 parts = line.strip().split()
                 if len(parts) >= 3:
-                    residues.add((parts[0], int(parts[1]), parts[2]))
+                    masks[pdb_id].add(
+                        (parts[0], int(parts[1]), parts[2])
+                    )
                 elif len(parts) == 2:
-                    residues.add((parts[0], int(parts[1]), " "))
-        masks[pdb_id] = residues
+                    masks[pdb_id].add(
+                        (parts[0], int(parts[1]), " ")
+                    )
 
-        # Find matching pruned file in same directory
+        # Parse fragment boundaries from the matching pruned file
+        # (each mask file corresponds to one pruned file)
         entry_dir = mask_file.parent
-        pruned_files = list(entry_dir.glob(f"{pdb_id}_*_pruned_all.pdb"))
-        starts: set[tuple[str, int, str]] = set()
-        ends: set[tuple[str, int, str]] = set()
-        if pruned_files:
-            fragments = _parse_inc_fragments(pruned_files[0])
+        chain_id = stem.rsplit("_", 1)[1]
+        pruned_file = entry_dir / f"{pdb_id}_{chain_id}_pruned_all.pdb"
+        if pdb_id not in frag_starts:
+            frag_starts[pdb_id] = set()
+            frag_ends[pdb_id] = set()
+        if pruned_file.exists():
+            fragments = _parse_inc_fragments(pruned_file)
             for chain, s_res, s_ic, e_res, e_ic in fragments:
-                starts.add((chain, s_res, s_ic))
-                ends.add((chain, e_res, e_ic))
-        frag_starts[pdb_id] = starts
-        frag_ends[pdb_id] = ends
+                frag_starts[pdb_id].add((chain, s_res, s_ic))
+                frag_ends[pdb_id].add((chain, e_res, e_ic))
 
     return masks, frag_starts, frag_ends
 

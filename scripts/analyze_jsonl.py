@@ -128,6 +128,7 @@ def analyze(  # noqa: C901 — intentionally monolithic
 
     # --- Dataset overview ---
     files: set[str] = set()
+    chains: set[tuple[str, str]] = set()
     eff_resname_counts: Counter[str] = Counter()
     standard_count = 0
     nonstandard_counts: Counter[str] = Counter()
@@ -135,6 +136,7 @@ def analyze(  # noqa: C901 — intentionally monolithic
 
     for rec in records:
         files.add(rec["file"])
+        chains.add((rec["file"], rec.get("chain", "")))
         rn = rec["resname"]
         eff_resname_counts[effective_resname(rn)] += 1
         if rn in STANDARD_AA:
@@ -145,9 +147,19 @@ def analyze(  # noqa: C901 — intentionally monolithic
         else:
             nonstandard_counts[rn] += 1
 
+    # Count structures with multiple chains
+    chains_per_file: Counter[str] = Counter()
+    for file_id, chain_id in chains:
+        chains_per_file[file_id] += 1
+    multi_chain_structures = sum(
+        1 for n in chains_per_file.values() if n > 1
+    )
+
     results["overview"] = {
         "total_residues": total,
-        "unique_files": len(files),
+        "unique_structures": len(files),
+        "unique_chains": len(chains),
+        "multi_chain_structures": multi_chain_structures,
         "standard_residues": standard_count,
         "nonstandard_residues": sum(nonstandard_counts.values()),
         "mapped_residues": {
@@ -490,7 +502,16 @@ def format_text_report(stats: dict[str, Any]) -> str:
     section("DATASET OVERVIEW")
     ov = stats["overview"]
     lines.append(f"  Total residues:       {ov['total_residues']:>12,}")
-    lines.append(f"  Unique files:         {ov['unique_files']:>12,}")
+    n_struct = ov.get("unique_structures", ov.get("unique_files", 0))
+    n_chain_ids = ov.get("unique_chains", n_struct)
+    n_multi = ov.get("multi_chain_structures", 0)
+    lines.append(f"  Unique structures:    {n_struct:>12,}")
+    lines.append(f"  Output chain IDs:     {n_chain_ids:>12,}  [1]")
+    if n_multi > 0:
+        lines.append(
+            f"  Multi-chain structs:  {n_multi:>12,}"
+            f"  ({n_chain_ids - n_struct} extra chains)"
+        )
     lines.append(f"  Standard residues:    {ov['standard_residues']:>12,}")
     lines.append(f"  Non-standard:         {ov['nonstandard_residues']:>12,}")
     if ov["mapped_residues"]:
@@ -720,6 +741,31 @@ def format_text_report(stats: dict[str, Any]) -> str:
                 f"  {info['missing']:>10,}"
                 f"  {info['percent_present']:>9.2f}%"
             )
+
+    # --- Notes ---
+    n_chain_ids = stats.get("overview", {}).get("unique_chains", 0)
+    n_struct = stats.get("overview", {}).get(
+        "unique_structures",
+        stats.get("overview", {}).get("unique_files", 0),
+    )
+    if n_chain_ids != n_struct:
+        lines.append("")
+        lines.append(
+            f"  [1] The output contains {n_chain_ids:,} unique"
+            f" (file, chain) combinations."
+        )
+        lines.append(
+            "      This may differ from the source chain list count"
+        )
+        lines.append(
+            "      if RCSB PDB remediation renamed or split chains"
+        )
+        lines.append(
+            "      relative to the original dataset. See ISSUES.md"
+        )
+        lines.append(
+            "      for per-entry details."
+        )
 
     lines.append("")
     return "\n".join(lines)

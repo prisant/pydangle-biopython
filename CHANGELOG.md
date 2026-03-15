@@ -5,6 +5,7 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
+- fix: multi-chain masking, filter merging, and analysis chain breakdown (32fa4f6)
 - feat: add --chain filter and top2018 ersatz preprocessing scripts (10f1b23)
 - docs: add top2018 analysis reports and PDB preprocessing script (c8fce68)
 - feat: add is_standard label and JSONL analysis script (7d57e63)
