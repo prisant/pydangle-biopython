@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add --suffix flag to ersatz/filter scripts for multi-dataset support (332e1dd)
+- feat: add ersatz-only builder and B-factor mask scripts for top8000 (99c0729)
+- feat: add --suffix flag to ersatz/filter scripts for multi-dataset support (b9ed97d)
 - fix: multi-chain masking, filter merging, and analysis chain breakdown (9fa1314)
 - feat: add --chain filter and top2018 ersatz preprocessing scripts (10f1b23)
 - docs: add top2018 analysis reports and PDB preprocessing script (c8fce68)
