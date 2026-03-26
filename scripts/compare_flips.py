@@ -9,7 +9,7 @@ Usage:
     python scripts/compare_flips.py SRC_DIR [-j JOBS] [--verbose]
 
 Example:
-    python scripts/compare_flips.py ~/Desktop/top2018_pdbs_full_filtered_hom70
+    python scripts/compare_flips.py ~/Desktop/Data/top2018_pdbs_full_filtered_hom70
 
 Output:
     Summary statistics plus per-entry details for any mismatches.

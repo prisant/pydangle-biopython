@@ -9,7 +9,7 @@ Usage:
     python scripts/run_reduce.py SRC_DIR [-j JOBS] [--het-db PATH]
 
 Example:
-    python scripts/run_reduce.py ~/Desktop/top2018_pdbs_full_filtered_hom70 -j 8
+    python scripts/run_reduce.py ~/Desktop/Data/top2018_pdbs_full_filtered_hom70 -j 8
 """
 
 from __future__ import annotations

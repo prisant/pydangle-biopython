@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add ersatz-only builder and B-factor mask scripts for top8000 (99c0729)
+- docs: update docstring paths for ~/Desktop/Data/ reorganization (369bff6)
+- feat: add ersatz-only builder and B-factor mask scripts for top8000 (84e7993)
 - feat: add --suffix flag to ersatz/filter scripts for multi-dataset support (b9ed97d)
 - fix: multi-chain masking, filter merging, and analysis chain breakdown (9fa1314)
 - feat: add --chain filter and top2018 ersatz preprocessing scripts (10f1b23)

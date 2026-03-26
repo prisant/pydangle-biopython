@@ -26,8 +26,8 @@ Output per chain (in entry directory):
 
 Example:
     python scripts/build_bfactor_masks.py \\
-        ~/Desktop/top8000_pdbs_hom70 \\
-        ~/Desktop/top8000_pdbs_hom70/Top8000-best_hom70_pdb_chain_list.csv \\
+        ~/Desktop/Data/top8000_pdbs_hom70 \\
+        ~/Desktop/Data/top8000_pdbs_hom70/Top8000-best_hom70_pdb_chain_list.csv \\
         -j 8 -b 30
 """
 
