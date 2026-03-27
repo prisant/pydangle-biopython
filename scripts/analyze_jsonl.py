@@ -89,6 +89,52 @@ class RunningStats:
         }
 
 
+class CircularRunningStats:
+    """Online circular statistics for angular data (degrees).
+
+    Uses sum-of-sines / sum-of-cosines accumulation.
+    Circular mean = atan2(mean_sin, mean_cos).
+    Circular std  = sqrt(-2 * ln(R)) where R is the mean resultant length.
+    """
+
+    def __init__(self) -> None:
+        self.n = 0
+        self._sum_sin = 0.0
+        self._sum_cos = 0.0
+
+    def add(self, x: float) -> None:
+        self.n += 1
+        rad = math.radians(x)
+        self._sum_sin += math.sin(rad)
+        self._sum_cos += math.cos(rad)
+
+    def mean(self) -> float:
+        if self.n == 0:
+            return 0.0
+        return math.degrees(
+            math.atan2(self._sum_sin / self.n, self._sum_cos / self.n)
+        )
+
+    def std(self) -> float:
+        if self.n < 2:
+            return 0.0
+        r = math.sqrt(
+            (self._sum_sin / self.n) ** 2
+            + (self._sum_cos / self.n) ** 2
+        )
+        # Clamp R to avoid log(0) when data is uniformly distributed
+        if r < 1e-15:
+            return 180.0  # maximum dispersion
+        return math.degrees(math.sqrt(-2.0 * math.log(r)))
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "n": self.n,
+            "mean": round(self.mean(), 3),
+            "std": round(self.std(), 3),
+        }
+
+
 def pct(count: int, total: int) -> float:
     """Percentage with safe division."""
     if total > 0:
@@ -231,7 +277,7 @@ def analyze(  # noqa: C901 — intentionally monolithic
         _analyze_dssp(records, results)
 
     # --- Geometric distributions ---
-    geom_fields = ["phi", "psi", "omega", "tau", "chi1"]
+    geom_fields = ["phi", "psi", "omega", "tau", "chi1", "chi2", "chi3", "chi4"]
     geom_avail = [f for f in geom_fields if f in available]
     if geom_avail:
         _analyze_geometry(records, geom_avail, available, results)
@@ -417,13 +463,18 @@ def _analyze_geometry(
     results: dict[str, Any],
 ) -> None:
     """Geometric distribution analysis."""
-    geom_overall: dict[str, RunningStats] = {
-        f: RunningStats() for f in geom_avail
-    }
-    geom_by_rama: dict[str, dict[str, RunningStats]] = (
-        defaultdict(
-            lambda: {f: RunningStats() for f in geom_avail}
-        )
+    # Torsion angles use circular statistics; tau (bond angle) uses linear.
+    circular_fields = {"phi", "psi", "omega", "chi1", "chi2", "chi3", "chi4"}
+
+    def _make_stats(fields: list[str]) -> dict[str, RunningStats | CircularRunningStats]:
+        return {
+            f: CircularRunningStats() if f in circular_fields else RunningStats()
+            for f in fields
+        }
+
+    geom_overall = _make_stats(geom_avail)
+    geom_by_rama: dict[str, dict[str, RunningStats | CircularRunningStats]] = (
+        defaultdict(lambda: _make_stats(geom_avail))
     )
     omega_dev = RunningStats()
 

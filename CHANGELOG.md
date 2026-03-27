@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- docs: update docstring paths for ~/Desktop/Data/ reorganization (369bff6)
+- fix: use circular statistics for torsion angles in analyze_jsonl.py (fa0b095)
+- docs: update docstring paths for ~/Desktop/Data/ reorganization (7afacc3)
 - feat: add ersatz-only builder and B-factor mask scripts for top8000 (84e7993)
 - feat: add --suffix flag to ersatz/filter scripts for multi-dataset support (b9ed97d)
 - fix: multi-chain masking, filter merging, and analysis chain breakdown (9fa1314)
