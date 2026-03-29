@@ -737,6 +737,13 @@ def format_text_report(stats: dict[str, Any]) -> str:
     # --- Geometry ---
     if "geometry" in stats:
         section("GEOMETRIC DISTRIBUTIONS")
+        lines.append(
+            "  Note: Torsion angles (phi, psi, omega, chi) use circular"
+        )
+        lines.append(
+            "  statistics (atan2 mean, sqrt(-2 ln R) std). Tau is linear."
+        )
+        lines.append("")
         geom = stats["geometry"]
         subsection("Overall")
         lines.append(
