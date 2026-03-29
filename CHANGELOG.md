@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add JSONL metadata record and jsonl2txt.sh conversion script (0f1aa09)
+- fix: pass _meta records through in filter_pruned_residues.py (a1c3fec)
+- feat: add JSONL metadata record and jsonl2txt.sh conversion script (fec5333)
 - refactor: rename cli.py → main.py for template consistency (4345da6)
 - feat: add pylint + expand ruff rules (B, PLC/PLE/PLW, RUF) (694a668)
 - fix: use circular statistics for torsion angles in analyze_jsonl.py (b38bec9)

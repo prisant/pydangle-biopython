@@ -228,6 +228,7 @@ def main() -> None:
                 continue
             record = json.loads(line)
             if record.get("_meta"):
+                print(line)
                 continue
             filename = record.get("file", "")
             pdb_id = ersatz_re.sub("", filename)
