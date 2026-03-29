@@ -98,6 +98,7 @@ disable = [
     "R0912",  # too-many-branches (CLI main function)
     "R0913",  # too-many-arguments (measurement pipeline functions)
     "R0914",  # too-many-locals (measurement pipeline functions)
+    "R0915",  # too-many-statements (CLI main function)
     "R0917",  # too-many-positional-arguments (measurement pipeline functions)
     "W0603",  # global-statement (used for DSSP cache)
     "W0611",  # unused-import (ruff F401 handles this)

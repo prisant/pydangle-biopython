@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- refactor: rename cli.py → main.py for template consistency (c25d7fd)
+- feat: add JSONL metadata record and jsonl2txt.sh conversion script (0f1aa09)
+- refactor: rename cli.py → main.py for template consistency (4345da6)
 - feat: add pylint + expand ruff rules (B, PLC/PLE/PLW, RUF) (694a668)
 - fix: use circular statistics for torsion angles in analyze_jsonl.py (b38bec9)
 - docs: update docstring paths for ~/Desktop/Data/ reorganization (7afacc3)

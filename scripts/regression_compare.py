@@ -85,6 +85,8 @@ def main() -> None:
             if not line:
                 continue
             rec = json.loads(line)
+            if rec.get("_meta"):
+                continue
             # Normalize filename: strip _ersatz suffix for matching
             fname = rec.get("file", "")
             rec["file"] = _normalize_filename(fname)
@@ -98,6 +100,8 @@ def main() -> None:
             if not line:
                 continue
             rec = json.loads(line)
+            if rec.get("_meta"):
+                continue
             fname = rec.get("file", "")
             rec["file"] = _normalize_filename(fname)
             new_records[record_key(rec)] = rec

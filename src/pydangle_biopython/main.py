@@ -1,10 +1,12 @@
 """Command-line interface for pydangle-biopython."""
 
 import argparse
+import json
 import multiprocessing
 import os
 import sys
 import tempfile
+from datetime import datetime, timezone
 from typing import Any
 
 from Bio.PDB import MMCIFParser, PDBParser  # type: ignore[attr-defined]
@@ -339,6 +341,23 @@ def main(argv: list[str] | None = None) -> int:
     chain_filter: tuple[str, ...] | None = (
         tuple(args.chain_filter) if args.chain_filter else None
     )
+
+    # Emit metadata record (JSONL) or header comment (CSV)
+    if output_format == "jsonl":
+        meta = {
+            "_meta": True,
+            "program": "pydangle-biopython",
+            "version": __version__,
+            "command": command_string,
+            "output_format": output_format,
+            "files": len(all_files),
+            "jobs": jobs,
+            "timestamp": datetime.now(timezone.utc)
+            .isoformat(timespec="seconds"),
+        }
+        if chain_filter:
+            meta["chain_filter"] = list(chain_filter)
+        print(json.dumps(meta, separators=(",", ":")))
 
     if jobs == 1:
         # Serial processing (original behaviour, no multiprocessing overhead)

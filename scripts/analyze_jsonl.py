@@ -48,7 +48,10 @@ def load_records(path: str) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     with open(path) as f:
         for line in f:
-            records.append(json.loads(line))
+            record = json.loads(line)
+            if record.get("_meta"):
+                continue
+            records.append(record)
     return records
 
 
