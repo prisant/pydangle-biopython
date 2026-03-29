@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- feat: add pylint + expand ruff rules (B, PLC/PLE/PLW, RUF) (623f08b)
+- refactor: rename cli.py → main.py for template consistency (c25d7fd)
+- feat: add pylint + expand ruff rules (B, PLC/PLE/PLW, RUF) (694a668)
 - fix: use circular statistics for torsion angles in analyze_jsonl.py (b38bec9)
 - docs: update docstring paths for ~/Desktop/Data/ reorganization (7afacc3)
 - feat: add ersatz-only builder and B-factor mask scripts for top8000 (84e7993)

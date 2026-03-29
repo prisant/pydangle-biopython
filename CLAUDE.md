@@ -36,7 +36,7 @@ make install      # editable install + dev deps + git hooks
 
 ```
 src/pydangle_biopython/
-├── cli.py          # Command-line interface (argparse)
+├── main.py          # Command-line interface (argparse)
 ├── fileinput.py    # File input collection (file lists, glob, directory)
 ├── parser.py       # Measurement command string parser
 ├── builtins.py     # Built-in measurement definitions

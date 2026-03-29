@@ -117,7 +117,7 @@ line, or `None` if no measurements were computable.
 
 ---
 
-## pydangle_biopython.cli
+## pydangle_biopython.main
 
 ### `main(argv=None)`
 

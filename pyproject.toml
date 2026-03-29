@@ -44,7 +44,7 @@ dev = [
 ]
 
 [project.scripts]
-pydangle-biopython = "pydangle_biopython.cli:main"
+pydangle-biopython = "pydangle_biopython.main:main"
 
 [project.urls]
 Homepage = "https://github.com/prisant/pydangle-biopython"

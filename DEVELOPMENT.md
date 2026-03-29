@@ -181,7 +181,7 @@ When adding new functionality, follow the existing module pattern:
 
 | File | Purpose |
 |------|---------|
-| `cli.py` | CLI entry point with argparse |
+| `main.py` | CLI entry point with argparse |
 | `parser.py` | Measurement command string parser |
 | `measure.py` | Geometric measurement computation |
 | `builtins.py` | Built-in measurement definitions |

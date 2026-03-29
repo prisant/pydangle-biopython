@@ -67,7 +67,7 @@ for line in lines:
 ### Running without installing
 
 ```bash
-PYTHONPATH=src python -m pydangle_biopython.cli structure.pdb
+PYTHONPATH=src python -m pydangle_biopython.main structure.pdb
 ```
 
 ## Running tests

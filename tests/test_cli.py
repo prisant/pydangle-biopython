@@ -5,7 +5,7 @@ import json
 import pytest
 
 from pydangle_biopython import __version__
-from pydangle_biopython.cli import _guess_format, main
+from pydangle_biopython.main import _guess_format, main
 from tests.conftest import HEXAPEPTIDE_PDB, RNA_DINUCLEOTIDE_PDB
 
 # ---------------------------------------------------------------------------

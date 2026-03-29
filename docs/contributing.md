@@ -82,7 +82,7 @@ When adding new functionality, follow the existing module pattern:
 - **`builtins.py`** — Built-in measurement command definitions
 - **`parser.py`** — Command string parsing and translation
 - **`measure.py`** — Geometry computation and structure traversal
-- **`cli.py`** — CLI entry point (keep thin, delegate to measure)
+- **`main.py`** — CLI entry point (keep thin, delegate to measure)
 - **`exceptions.py`** — Custom exception classes
 
 ## Adding dependencies

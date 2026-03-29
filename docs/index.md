@@ -62,7 +62,7 @@ pydangle-biopython/
 │       ├── __init__.py
 │       ├── py.typed
 │       ├── builtins.py
-│       ├── cli.py
+│       ├── main.py
 │       ├── exceptions.py
 │       ├── measure.py
 │       └── parser.py
@@ -70,7 +70,7 @@ pydangle-biopython/
 │   ├── __init__.py
 │   ├── conftest.py
 │   ├── test_builtins.py
-│   ├── test_cli.py
+│   ├── test_main.py
 │   ├── test_measure.py
 │   └── test_parser.py
 └── examples/
