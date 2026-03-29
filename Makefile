@@ -1,4 +1,4 @@
-.PHONY: install install-hooks test test-cov lint format typecheck changelog docs docs-build bump benchmark clean all
+.PHONY: install install-hooks test test-cov lint format typecheck pylint changelog docs docs-build bump benchmark clean all
 
 install:
 	pip install -e ".[dev]"
@@ -22,6 +22,9 @@ format:
 
 typecheck:
 	mypy src/
+
+pylint:
+	pylint src/
 
 changelog:
 	./scripts/generate_changelog.sh
@@ -47,4 +50,4 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . \( -name '*~' -o -name '*.swp' -o -name '*.swo' -o -name '*.patch' \) -delete
 
-all: lint typecheck test
+all: lint typecheck pylint test

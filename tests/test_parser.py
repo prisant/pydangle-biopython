@@ -180,28 +180,28 @@ class TestParseAtomPosition:
         assert regex.match(" CA ")
 
     def test_implicit_offset(self):
-        offset, regex = parse_atom_position("_CA_")
+        offset, _regex = parse_atom_position("_CA_")
         assert offset == 0
 
     def test_positive_offset(self):
-        offset, regex = parse_atom_position("i+1 _CA_")
+        offset, _regex = parse_atom_position("i+1 _CA_")
         assert offset == 1
 
     def test_negative_offset(self):
-        offset, regex = parse_atom_position("i-1 _C__")
+        offset, _regex = parse_atom_position("i-1 _C__")
         assert offset == -1
 
     def test_large_offset(self):
-        offset, regex = parse_atom_position("i+2 _CA_")
+        offset, _regex = parse_atom_position("i+2 _CA_")
         assert offset == 2
 
     def test_underscore_to_space(self):
-        offset, regex = parse_atom_position("i _CA_")
+        _offset, regex = parse_atom_position("i _CA_")
         assert regex.match(" CA ")
         assert not regex.match("_CA_")
 
     def test_regex_pattern(self):
-        offset, regex = parse_atom_position("i /_[ACNOS]G[_1]/")
+        _offset, regex = parse_atom_position("i /_[ACNOS]G[_1]/")
         # Should match atoms like " CG " or " CG1" or " OG " etc.
         assert regex.match(" CG ")
         assert regex.match(" CG1")
@@ -211,12 +211,12 @@ class TestParseAtomPosition:
 
     def test_nucleic_acid_star(self):
         """The * in nucleic acid atom names should match both * and '."""
-        offset, regex = parse_atom_position("i _O3*")
+        _offset, regex = parse_atom_position("i _O3*")
         assert regex.match(" O3*")
         assert regex.match(" O3'")
 
     def test_bare_i_offset(self):
-        offset, regex = parse_atom_position("i _N__")
+        offset, _regex = parse_atom_position("i _N__")
         assert offset == 0
 
 
@@ -251,7 +251,7 @@ class TestCommandStringParser:
         """chi for nucleic acids has two alternatives (purine/pyrimidine)."""
         result = command_string_parser("chi_na")
         assert len(result) == 1
-        fun_key, label, arg_lists = result[0]
+        fun_key, _label, arg_lists = result[0]
         assert fun_key == "dihedral"
         assert len(arg_lists) == 2  # two alternatives
 

@@ -27,7 +27,7 @@ def files_from_list(path: str) -> list[str]:
             raise FileNotFoundError(
                 f"file list not found: {path}",
             )
-        with open(path) as fh:
+        with open(path, encoding="utf-8") as fh:
             lines = fh.read().splitlines()
 
     result: list[str] = []

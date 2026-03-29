@@ -80,14 +80,14 @@ def expand_command_list(command_string: str) -> list[str]:
     """
     commands = _tokenize(command_string, ";")
     expanded = []
-    for cmd in commands:
-        cmd = cmd.strip()
-        if not cmd:
+    for raw_cmd in commands:
+        stripped = raw_cmd.strip()
+        if not stripped:
             continue
-        if cmd in BUILTIN_COMMANDS:
-            expanded.append(BUILTIN_COMMANDS[cmd])
+        if stripped in BUILTIN_COMMANDS:
+            expanded.append(BUILTIN_COMMANDS[stripped])
         else:
-            expanded.append(cmd)
+            expanded.append(stripped)
     return expanded
 
 

@@ -49,6 +49,7 @@ def run_dssp(filepath: str) -> str | None:
             capture_output=True,
             text=True,
             timeout=120,
+            check=False,
         )
         if result.returncode != 0:
             return None

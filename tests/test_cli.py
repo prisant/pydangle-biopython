@@ -274,10 +274,10 @@ class TestCLI:
         cmds = "phi; psi; omega; tau; chi1; rama_category; is_cis; dssp"
         files = [ubq, ubq, ubq]
 
-        main(["-c", cmds, "-j", "1"] + files)
+        main(["-c", cmds, "-j", "1", *files])
         serial_out = capsys.readouterr().out
 
-        main(["-c", cmds, "-j", "2"] + files)
+        main(["-c", cmds, "-j", "2", *files])
         parallel_out = capsys.readouterr().out
 
         assert serial_out == parallel_out

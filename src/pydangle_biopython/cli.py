@@ -41,7 +41,7 @@ def _parse_pdb_resilient(filepath: str) -> Any:
         f"{os.path.basename(filepath)}, retrying without headers",
         file=sys.stderr,
     )
-    with open(filepath) as fh:
+    with open(filepath, encoding="utf-8") as fh:
         coord_lines = [
             line
             for line in fh

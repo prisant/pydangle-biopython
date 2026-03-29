@@ -142,7 +142,7 @@ def calc_wrapper(function_key: str, args: list[Any], unknown_str: str) -> str:
                     args[3],
                 )
             )
-        elif function_key == "angle" and n == 3:
+        if function_key == "angle" and n == 3:
             return angle_to_string(
                 calc_angle(  # type: ignore[no-untyped-call]
                     args[0],
@@ -150,7 +150,7 @@ def calc_wrapper(function_key: str, args: list[Any], unknown_str: str) -> str:
                     args[2],
                 )
             )
-        elif function_key == "distance" and n == 2:
+        if function_key == "distance" and n == 2:
             return number_to_string(calc_dist(args[0], args[1]))
     except Exception:
         # Degenerate geometry, missing atoms, etc.
@@ -540,7 +540,7 @@ def process_measurement_for_residue(
             "ins": res_id[2],
             "resname": residue.get_resname(),
         }
-        for command, result in zip(command_list, results):
+        for command, result in zip(command_list, results, strict=True):
             record[command[1]] = _measurement_value(result, command, unknown_str)
         return json.dumps(record, separators=(",", ":"))
 

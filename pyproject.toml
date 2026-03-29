@@ -38,6 +38,7 @@ dev = [
     "pytest-cov",
     "ruff",
     "mypy",
+    "pylint",
     "mkdocs>=1.5",
     "mkdocs-material>=9.0",
 ]
@@ -64,7 +65,12 @@ target-version = "py310"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP"]
+select = ["E", "F", "I", "N", "W", "UP", "B", "PLC", "PLE", "PLW", "RUF"]
+ignore = [
+    "RUF002",  # ambiguous unicode in docstrings (Greek letters α, en-dashes – are intentional)
+    "RUF003",  # ambiguous unicode in comments (same)
+    "PLC0415",  # import not at top-level (used deliberately in tests for optional deps)
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["pydangle_biopython"]
@@ -72,3 +78,33 @@ known-first-party = ["pydangle_biopython"]
 [tool.mypy]
 python_version = "3.10"
 strict = true
+
+[tool.pylint.main]
+load-plugins = []
+
+[tool.pylint."messages control"]
+# Disable rules already covered by ruff (style, imports) or mypy (types)
+disable = [
+    "C0103",  # invalid-name (module-level caching variables don't need UPPER_CASE)
+    "C0114",  # missing-module-docstring (not required for all modules)
+    "C0115",  # missing-class-docstring (not required for all classes)
+    "C0116",  # missing-function-docstring (not required for all functions)
+    "C0301",  # line-too-long (ruff handles this)
+    "C0411",  # wrong-import-order (ruff isort handles this)
+    "C0414",  # useless-import-alias (used for re-export in __init__.py)
+    "E0611",  # no-name-in-module (mypy handles this)
+    "R0903",  # too-few-public-methods (dataclasses trigger this)
+    "R0911",  # too-many-return-statements (label classification functions)
+    "R0912",  # too-many-branches (CLI main function)
+    "R0913",  # too-many-arguments (measurement pipeline functions)
+    "R0914",  # too-many-locals (measurement pipeline functions)
+    "R0917",  # too-many-positional-arguments (measurement pipeline functions)
+    "W0603",  # global-statement (used for DSSP cache)
+    "W0611",  # unused-import (ruff F401 handles this)
+    "W0612",  # unused-variable (ruff F841 handles this)
+    "W0613",  # unused-argument (common in interfaces/callbacks)
+    "W0718",  # broad-exception-caught (intentional for batch processing resilience)
+]
+
+[tool.pylint.format]
+max-line-length = 88
