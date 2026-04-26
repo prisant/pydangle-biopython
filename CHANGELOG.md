@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- fix: clean ANISOU/SIGATM/SIGUIJ and blank chain IDs before invoking mkdssp (dcfbac4)
+- fix: also fill blank chain ID in SEQRES (column 12), not just ATOM (74ee569)
+- fix: clean ANISOU/SIGATM/SIGUIJ and blank chain IDs before invoking mkdssp (03e5511)
 - fix: add circular statistics note to analyze_jsonl.py text output (bfc9a69)
 - fix: pass _meta records through in filter_pruned_residues.py (40969b8)
 - feat: add JSONL metadata record and jsonl2txt.sh conversion script (fec5333)

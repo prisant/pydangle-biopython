@@ -53,6 +53,12 @@ def _needs_pdb_cleanup(filepath: str) -> bool:
                 and line[21] == " "
             ):
                 return True
+            if (
+                line.startswith("SEQRES")
+                and len(line) > 11
+                and line[11] == " "
+            ):
+                return True
     return False
 
 
@@ -60,8 +66,10 @@ def _clean_pdb_for_dssp(filepath: str) -> str:
     """Write a temporary copy of *filepath* cleaned for mkdssp.
 
     Strips ANISOU/SIGATM/SIGUIJ records and fills blank chain IDs
-    (column 22) with the first non-blank chain ID found in ATOM
-    records, falling back to ``'A'``.
+    in both ATOM/HETATM/TER records (column 22) and SEQRES records
+    (column 12) with the first non-blank chain ID found in ATOM
+    records, falling back to ``'A'``.  mkdssp 4.x fails to parse PDB
+    files with blank chains in either column.
 
     Returns the path to the temporary file.  Caller is responsible
     for cleanup.
@@ -90,6 +98,12 @@ def _clean_pdb_for_dssp(filepath: str) -> str:
                     and line[21] == " "
                 ):
                     out = line[:21] + default_chain + line[22:]
+                elif (
+                    line.startswith("SEQRES")
+                    and len(line) > 11
+                    and line[11] == " "
+                ):
+                    out = line[:11] + default_chain + line[12:]
                 tmp.write(out)
         tmp_name = tmp.name
     return tmp_name

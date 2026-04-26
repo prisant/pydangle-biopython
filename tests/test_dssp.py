@@ -1,10 +1,13 @@
 """Tests for DSSP secondary structure assignment."""
 
 import os
+import tempfile
 
 import pytest
 
 from pydangle_biopython.dssp import (
+    _clean_pdb_for_dssp,
+    _needs_pdb_cleanup,
     find_mkdssp,
     label_dssp,
     label_dssp3,
@@ -39,6 +42,73 @@ class TestRunDssp:
     def test_nonexistent_file_returns_none(self):
         result = run_dssp("/nonexistent/file.pdb")
         assert result is None
+
+
+class TestPdbCleanup:
+    """Cleanup of mkdssp-hostile records before invoking mkdssp 4.x.
+
+    Regression coverage for the blank-chain-SEQRES bug discovered while
+    propagating DSSP fixes from top100 to top500: legacy single-chain
+    PDB depositions can have a space at column 12 of SEQRES records,
+    which mkdssp 4.x rejects.  Build_ersatz_only.py only filled column
+    22 (ATOM) chains, so the blank SEQRES propagated through to
+    pydangle's per-file mkdssp call, silently nulling the entire
+    structure's DSSP output.
+    """
+
+    def _write_pdb(self, lines):
+        """Write *lines* to a temp file, return its path."""
+        fd, path = tempfile.mkstemp(suffix=".pdb")
+        with os.fdopen(fd, "w") as fh:
+            fh.write("\n".join(lines) + "\n")
+        return path
+
+    def test_blank_seqres_chain_triggers_cleanup(self):
+        path = self._write_pdb([
+            "HEADER    HYDROLASE",
+            "SEQRES   1     93  SER LYS ALA",
+            "ATOM      1  N   SER A   1       0.000   0.000   0.000",
+        ])
+        try:
+            assert _needs_pdb_cleanup(path) is True
+        finally:
+            os.unlink(path)
+
+    def test_filled_seqres_chain_does_not_trigger_cleanup(self):
+        path = self._write_pdb([
+            "HEADER    HYDROLASE",
+            "SEQRES   1 A   3  SER LYS ALA",
+            "ATOM      1  N   SER A   1       0.000   0.000   0.000",
+        ])
+        try:
+            assert _needs_pdb_cleanup(path) is False
+        finally:
+            os.unlink(path)
+
+    def test_cleanup_fills_blank_seqres_chain(self):
+        path = self._write_pdb([
+            "HEADER    HYDROLASE",
+            "SEQRES   1     93  SER LYS ALA",
+            "SEQRES   2     93  VAL LYS TYR",
+            "ATOM      1  N   SER A   1       0.000   0.000   0.000",
+        ])
+        try:
+            cleaned = _clean_pdb_for_dssp(path)
+            try:
+                with open(cleaned, encoding="utf-8") as fh:
+                    seqres_lines = [
+                        line for line in fh
+                        if line.startswith("SEQRES")
+                    ]
+                assert len(seqres_lines) == 2
+                for line in seqres_lines:
+                    assert line[11] == "A", (
+                        f"SEQRES chain ID not filled: {line!r}"
+                    )
+            finally:
+                os.unlink(cleaned)
+        finally:
+            os.unlink(path)
 
 
 class TestParseDsspOutput:
