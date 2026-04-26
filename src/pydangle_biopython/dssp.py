@@ -47,8 +47,10 @@ def _needs_pdb_cleanup(filepath: str) -> bool:
         for line in fh:
             if line.startswith(_STRIP_PREFIXES):
                 return True
+            if line.startswith("HETATM"):
+                return True
             if (
-                line.startswith(("ATOM  ", "HETATM", "TER   "))
+                line.startswith(("ATOM  ", "TER   "))
                 and len(line) > 21
                 and line[21] == " "
             ):
@@ -65,24 +67,46 @@ def _needs_pdb_cleanup(filepath: str) -> bool:
 def _clean_pdb_for_dssp(filepath: str) -> str:
     """Write a temporary copy of *filepath* cleaned for mkdssp.
 
-    Strips ANISOU/SIGATM/SIGUIJ records and fills blank chain IDs
-    in both ATOM/HETATM/TER records (column 22) and SEQRES records
-    (column 12) with the first non-blank chain ID found in ATOM
-    records, falling back to ``'A'``.  mkdssp 4.x fails to parse PDB
-    files with blank chains in either column.
+    Strips ANISOU/SIGATM/SIGUIJ records and selectively strips HETATM
+    records: only HETATM whose residue name is not part of the
+    protein chain (i.e., not in SEQRES and not in ATOM resnames) are
+    removed.  This drops ligand / water / cofactor heteroatoms (HOH,
+    SO4, GOL, NAG, ZN, ...) that would collide with the SEQRES
+    protein alignment and silently null mkdssp's output, while
+    preserving modified amino-acid residues (MSE, PCA, MEN, PTR, LOV,
+    ...) that some old PDBs deposit as HETATM rather than ATOM.
+
+    Also fills blank chain IDs in ATOM/HETATM/TER records (column 22)
+    and SEQRES records (column 12) with the first non-blank chain ID
+    found in ATOM records, falling back to ``'A'``.
 
     Returns the path to the temporary file.  Caller is responsible
     for cleanup.
     """
-    # Find default chain ID from ATOM records
+    # Single first pass: collect default chain + protein residue names
+    # from SEQRES and ATOM records.
     default_chain = "A"
+    chain_seen = False
+    protein_residues: set[str] = set()
     with open(filepath, encoding="utf-8") as fh:
         for line in fh:
             if line.startswith("ATOM  ") and len(line) > 21:
-                ch = line[21]
-                if ch != " ":
-                    default_chain = ch
-                    break
+                if not chain_seen:
+                    ch = line[21]
+                    if ch != " ":
+                        default_chain = ch
+                        chain_seen = True
+                if len(line) >= 20:
+                    protein_residues.add(line[17:20].strip())
+            elif line.startswith("SEQRES") and len(line) > 19:
+                # SEQRES residue names are 3-char fields starting at
+                # column 20 (0-indexed 19), spaced every 4 columns.
+                idx = 19
+                while idx + 3 <= len(line):
+                    name = line[idx:idx + 3].strip()
+                    if name:
+                        protein_residues.add(name)
+                    idx += 4
 
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".pdb", delete=False,
@@ -91,6 +115,10 @@ def _clean_pdb_for_dssp(filepath: str) -> str:
             for line in fh:
                 if line.startswith(_STRIP_PREFIXES):
                     continue
+                if line.startswith("HETATM"):
+                    resname = line[17:20].strip() if len(line) >= 20 else ""
+                    if resname not in protein_residues:
+                        continue
                 out = line
                 if (
                     line.startswith(("ATOM  ", "HETATM", "TER   "))
@@ -116,8 +144,11 @@ def run_dssp(filepath: str) -> str | None:
 
     Before invoking mkdssp, the input is cleaned to work around
     mkdssp 4.x issues: ANISOU/SIGATM/SIGUIJ records are stripped
-    (they cause incomplete or zero-residue output) and blank chain IDs
-    are filled (they cause parse failures on old PDB depositions).
+    (they cause incomplete or zero-residue output), HETATM records
+    are stripped (they cause silent zero-residue output when ligand /
+    water / cofactor heteroatoms collide with SEQRES protein
+    alignment), and blank chain IDs are filled (they cause parse
+    failures on old PDB depositions).
     """
     exe = find_mkdssp()
     if exe is None:

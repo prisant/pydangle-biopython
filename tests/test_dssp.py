@@ -110,6 +110,104 @@ class TestPdbCleanup:
         finally:
             os.unlink(path)
 
+    def test_hetatm_triggers_cleanup(self):
+        path = self._write_pdb([
+            "HEADER    HYDROLASE",
+            "SEQRES   1 A   3  SER LYS ALA",
+            "ATOM      1  N   SER A   1       0.000   0.000   0.000",
+            "HETATM 1234  O   HOH A 100      10.000  10.000  10.000",
+        ])
+        try:
+            assert _needs_pdb_cleanup(path) is True
+        finally:
+            os.unlink(path)
+
+    def test_cleanup_strips_hetatm(self):
+        path = self._write_pdb([
+            "HEADER    HYDROLASE",
+            "SEQRES   1 A   3  SER LYS ALA",
+            "ATOM      1  N   SER A   1       0.000   0.000   0.000",
+            "HETATM 1234  O   HOH A 100      10.000  10.000  10.000",
+            "HETATM 5678  S   SO4 A 200      20.000  20.000  20.000",
+            "ATOM      2  N   LYS A   2       1.000   0.000   0.000",
+        ])
+        try:
+            cleaned = _clean_pdb_for_dssp(path)
+            try:
+                with open(cleaned, encoding="utf-8") as fh:
+                    out_lines = fh.readlines()
+                hetatm_lines = [line for line in out_lines if line.startswith("HETATM")]
+                atom_lines = [line for line in out_lines if line.startswith("ATOM  ")]
+                seqres_lines = [line for line in out_lines if line.startswith("SEQRES")]
+                assert len(hetatm_lines) == 0, "HETATM records should be stripped"
+                assert len(atom_lines) == 2, "ATOM records should be preserved"
+                assert len(seqres_lines) == 1, "SEQRES records should be preserved"
+            finally:
+                os.unlink(cleaned)
+        finally:
+            os.unlink(path)
+
+    def test_cleanup_preserves_protein_when_only_hetatm_present(self):
+        """Regression: ATOM/SEQRES content must survive HETATM stripping intact."""
+        path = self._write_pdb([
+            "HEADER    HYDROLASE",
+            "SEQRES   1 A   2  SER LYS",
+            "ATOM      1  N   SER A   1       0.000   0.000   0.000",
+            "ATOM      2  CA  SER A   1       1.000   0.000   0.000",
+            "HETATM 9999  O   HOH A 100      10.000  10.000  10.000",
+            "TER",
+        ])
+        try:
+            cleaned = _clean_pdb_for_dssp(path)
+            try:
+                with open(cleaned, encoding="utf-8") as fh:
+                    text = fh.read()
+                assert "SER A   1" in text
+                assert "ATOM      1  N" in text
+                assert "ATOM      2  CA" in text
+                assert "HETATM" not in text
+                assert "HOH" not in text
+            finally:
+                os.unlink(cleaned)
+        finally:
+            os.unlink(path)
+
+    def test_cleanup_keeps_hetatm_modified_residue(self):
+        """Regression for top100 PCA/MEN/PTR/MSE-style modified residues:
+        HETATM lines whose residue name appears in SEQRES (or ATOM) are
+        part of the protein chain and must be preserved.
+
+        SEQRES layout (PDB spec, 1-based cols): SEQRES(1-6), blank(7),
+        serNum(8-10), blank(11), chainID(12), blank(13), numRes(14-17),
+        blanks(18-19), resName1(20-22), blank(23), resName2(24-26), ...
+        """
+        path = self._write_pdb([
+            "HEADER    HYDROLASE",
+            "SEQRES   1 A    3  PCA SER LYS",
+            "HETATM    1  N   PCA A   1       0.000   0.000   0.000",
+            "HETATM    2  CA  PCA A   1       1.000   0.000   0.000",
+            "ATOM      3  N   SER A   2       2.000   0.000   0.000",
+            "HETATM 9999  O   HOH A 100      10.000  10.000  10.000",
+            "TER",
+        ])
+        try:
+            cleaned = _clean_pdb_for_dssp(path)
+            try:
+                with open(cleaned, encoding="utf-8") as fh:
+                    text = fh.read()
+                # PCA HETATM lines (modified residue, in SEQRES) preserved
+                assert "PCA A   1" in text
+                assert "HETATM    1  N   PCA" in text
+                assert "HETATM    2  CA  PCA" in text
+                # HOH HETATM (not in SEQRES) stripped
+                assert "HOH" not in text
+                # ATOM line preserved
+                assert "ATOM      3  N   SER" in text
+            finally:
+                os.unlink(cleaned)
+        finally:
+            os.unlink(path)
+
 
 class TestParseDsspOutput:
     def test_parses_ubiquitin(self):
