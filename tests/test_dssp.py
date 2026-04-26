@@ -63,18 +63,18 @@ class TestParseDsspOutput:
         assignments = parse_dssp_output(text)
         assert assignments[("A", 2, "")] == "E"
 
-    def test_coil_residue(self):
-        """Residue 17 should be coil (C)."""
+    def test_loop_residue(self):
+        """Residue 17 should be loop (None) — DSSP space."""
         text = run_dssp(UBQ_PATH)
         assert text is not None
         assignments = parse_dssp_output(text)
-        assert assignments[("A", 17, "")] == "C"
+        assert assignments[("A", 17, "")] is None
 
     def test_all_codes_valid(self):
         text = run_dssp(UBQ_PATH)
         assert text is not None
         assignments = parse_dssp_output(text)
-        valid_codes = {"H", "B", "E", "G", "I", "T", "S", "C", "P"}
+        valid_codes = {"H", "B", "E", "G", "I", "T", "S", "P", None}
         for code in assignments.values():
             assert code in valid_codes, f"Invalid DSSP code: {code!r}"
 
@@ -138,7 +138,8 @@ class TestDsspIntegration:
         )
         data_lines = [line for line in lines if not line.startswith("#")]
         assert len(data_lines) == 76
-        valid8 = {"H", "B", "E", "G", "I", "T", "S", "C", "P"}
+        # dssp: SS codes or __?__ for loop/unassigned
+        valid8 = {"H", "B", "E", "G", "I", "T", "S", "P", "__?__"}
         valid3 = {"H", "E", "C"}
         for line in data_lines:
             parts = line.split(":")

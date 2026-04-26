@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- fix: add circular statistics note to analyze_jsonl.py text output (8ae4120)
+- fix: clean ANISOU/SIGATM/SIGUIJ and blank chain IDs before invoking mkdssp (dcfbac4)
+- fix: add circular statistics note to analyze_jsonl.py text output (bfc9a69)
 - fix: pass _meta records through in filter_pruned_residues.py (40969b8)
 - feat: add JSONL metadata record and jsonl2txt.sh conversion script (fec5333)
 - refactor: rename cli.py → main.py for template consistency (4345da6)
