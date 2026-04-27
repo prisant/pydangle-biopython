@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- fix: also strip non-protein HETATM records before invoking mkdssp (a32cf88)
+- fix: accept mkdssp stdout when returncode is non-zero but residue table is present (3f320b2)
+- fix: also strip non-protein HETATM records before invoking mkdssp (5eaed6b)
 - fix: also fill blank chain ID in SEQRES (column 12), not just ATOM (5e79f71)
 - fix: clean ANISOU/SIGATM/SIGUIJ and blank chain IDs before invoking mkdssp (03e5511)
 - fix: add circular statistics note to analyze_jsonl.py text output (bfc9a69)

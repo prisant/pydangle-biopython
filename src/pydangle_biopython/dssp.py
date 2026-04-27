@@ -149,6 +149,17 @@ def run_dssp(filepath: str) -> str | None:
     water / cofactor heteroatoms collide with SEQRES protein
     alignment), and blank chain IDs are filled (they cause parse
     failures on old PDB depositions).
+
+    mkdssp 4.x exits 1 with the message "This file contains data that
+    won't fit in the original DSSP format" for structures whose HEADER
+    or COMPND fields exceed legacy fixed-width column widths (typically
+    multi-chain structures with >9 chains and long molecule descriptors,
+    e.g. 1h64, 1ryp, 2zzs, 3mt6 in top8000).  The residue-by-residue
+    secondary-structure data in stdout is nonetheless complete and
+    correct in this case (verified residue-identical against mkdssp's
+    file-output mode which exits 0 for the same input).  This wrapper
+    treats stdout as authoritative when it contains the residue-table
+    marker, regardless of returncode.
     """
     exe = find_mkdssp()
     if exe is None:
@@ -174,7 +185,12 @@ def run_dssp(filepath: str) -> str | None:
             timeout=120,
             check=False,
         )
-        if result.returncode != 0:
+        # mkdssp 4.x exits 1 with a "won't fit in original DSSP format"
+        # warning for structures whose header fields overflow legacy
+        # fixed-width columns; the residue table in stdout is still
+        # complete and correct.  Trust stdout when it contains the
+        # residue-table marker, regardless of returncode.
+        if "#  RESIDUE" not in result.stdout:
             return None
         return result.stdout
     except (subprocess.TimeoutExpired, OSError):

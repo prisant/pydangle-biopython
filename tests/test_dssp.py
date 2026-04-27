@@ -1,10 +1,12 @@
 """Tests for DSSP secondary structure assignment."""
 
 import os
+import subprocess
 import tempfile
 
 import pytest
 
+from pydangle_biopython import dssp as dssp_module
 from pydangle_biopython.dssp import (
     _clean_pdb_for_dssp,
     _needs_pdb_cleanup,
@@ -41,6 +43,56 @@ class TestRunDssp:
 
     def test_nonexistent_file_returns_none(self):
         result = run_dssp("/nonexistent/file.pdb")
+        assert result is None
+
+    def test_accepts_stdout_when_returncode_nonzero_with_residue_table(
+        self, monkeypatch,
+    ):
+        """Regression for the top8000 1h64/1ryp/2zzs/3mt6 silent-null bug:
+        mkdssp 4.x returns exit code 1 with the message "This file
+        contains data that won't fit in the original DSSP format" when
+        the structure exceeds legacy fixed-width column widths in the
+        HEADER / COMPND fields.  The residue table in stdout is still
+        complete and correct in this case; we trust it."""
+        valid_stdout = (
+            "==== Secondary Structure Definition by the program DSSP\n"
+            "REFERENCE Kabsch & Sander 1983\n"
+            "  #  RESIDUE AA STRUCTURE BP1 BP2  ACC\n"
+            "    1    1 A M              0   0  100\n"
+        )
+
+        def fake_run(*args, **kwargs):
+            return subprocess.CompletedProcess(
+                args=args[0] if args else [],
+                returncode=1,
+                stdout=valid_stdout,
+                stderr=(
+                    "This file contains data that won't fit "
+                    "in the original DSSP format"
+                ),
+            )
+
+        monkeypatch.setattr(dssp_module.subprocess, "run", fake_run)
+        result = run_dssp(UBQ_PATH)
+        assert result is not None
+        assert "#  RESIDUE" in result
+
+    def test_returns_none_when_returncode_nonzero_and_no_residue_table(
+        self, monkeypatch,
+    ):
+        """Real-failure path: mkdssp returns nonzero AND stdout lacks the
+        residue table (e.g., catastrophic parse failure).  Should still
+        return None."""
+        def fake_run(*args, **kwargs):
+            return subprocess.CompletedProcess(
+                args=args[0] if args else [],
+                returncode=1,
+                stdout="some banner without the table marker\n",
+                stderr="catastrophic failure",
+            )
+
+        monkeypatch.setattr(dssp_module.subprocess, "run", fake_run)
+        result = run_dssp(UBQ_PATH)
         assert result is None
 
 
