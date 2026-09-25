@@ -50,10 +50,11 @@ class TestRunDssp:
     ):
         """Regression for the top8000 1h64/1ryp/2zzs/3mt6 silent-null bug:
         mkdssp 4.x returns exit code 1 with the message "This file
-        contains data that won't fit in the original DSSP format" when
-        the structure exceeds legacy fixed-width column widths in the
-        HEADER / COMPND fields.  The residue table in stdout is still
-        complete and correct in this case; we trust it."""
+        contains data that won't fit in the original DSSP format" but
+        still prints a residue table; a whole-structure run accepts it.
+        (Those four entries have >26 chains, where the table omits the
+        surplus chains; such structures now take the chain-batched path,
+        see TestChainBatching.)"""
         valid_stdout = (
             "==== Secondary Structure Definition by the program DSSP\n"
             "REFERENCE Kabsch & Sander 1983\n"
@@ -345,6 +346,112 @@ class TestLabelDssp:
         set_dssp_assignments(None)
         result = label_dssp(ubq_chain, 0, "__?__")
         assert result == "__?__"
+
+
+_MANY_CHAIN_IDS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcd"  # 30 chains
+
+
+def _write_multichain_ubq(path: str, chain_ids: str, spacing: float = 60.0) -> None:
+    """Write copies of 1ubq chain A, one per chain ID, translated along x.
+
+    The copies are far apart, so each chain's DSSP assignment should equal
+    that of 1ubq on its own, whichever batch the chain lands in.
+    """
+    with open(UBQ_PATH, encoding="utf-8") as fh:
+        lines = fh.readlines()
+    header = [ln for ln in lines if ln.startswith("HEADER")]
+    seqres = [ln for ln in lines if ln.startswith("SEQRES")]
+    cryst1 = [ln for ln in lines if ln.startswith("CRYST1")]
+    atoms = [ln for ln in lines if ln.startswith("ATOM  ")]
+    serial = 0
+    with open(path, "w", encoding="utf-8") as out:
+        # PDB record order: HEADER, SEQRES, CRYST1, ATOM (mkdssp rejects
+        # SEQRES after CRYST1).
+        out.writelines(header)
+        for ch in chain_ids:
+            for ln in seqres:
+                out.write(ln[:11] + ch + ln[12:])
+        out.writelines(cryst1)
+        for i, ch in enumerate(chain_ids):
+            for ln in atoms:
+                serial += 1
+                x = float(ln[30:38]) + spacing * i
+                out.write(f"{ln[:6]}{serial:5d}{ln[11:21]}{ch}{ln[22:30]}{x:8.3f}{ln[38:]}")
+            out.write(f"TER   {serial + 1:5d}\n")
+        out.write("END\n")
+
+
+class TestChainBatching:
+    """Structures with >26 chains exceed mkdssp 4.x's classic-format limit.
+
+    Regression for top2018 3uoi (chain f), 4ub8 (chain u) and 4v4m:
+    without batching, chains after the 26th got no DSSP code.
+    """
+
+    def test_chains_in_file_order(self, tmp_path):
+        from pydangle_biopython.dssp import _chains_in_file
+        f = tmp_path / "m.pdb"
+        _write_multichain_ubq(str(f), "QBa")
+        assert _chains_in_file(str(f)) == ["Q", "B", "a"]
+
+    def test_write_chain_batch_filter(self, tmp_path):
+        import io
+
+        from pydangle_biopython.dssp import _write_chain_batch
+        f = tmp_path / "m.pdb"
+        _write_multichain_ubq(str(f), "ABC")
+        buf = io.StringIO()
+        _write_chain_batch(str(f), {"B"}, buf)
+        out = buf.getvalue().splitlines()
+        assert any(ln.startswith("HEADER") for ln in out)
+        assert any(ln.startswith("CRYST1") for ln in out)
+        assert {ln[11] for ln in out if ln.startswith("SEQRES")} == {"B"}
+        assert {ln[21] for ln in out if ln.startswith("ATOM  ")} == {"B"}
+        assert out[-1] == "END"
+
+    def test_many_chains_all_assigned(self, tmp_path):
+        f = tmp_path / "many.pdb"
+        _write_multichain_ubq(str(f), _MANY_CHAIN_IDS)
+        single = parse_dssp_output(run_dssp(UBQ_PATH))
+        text = run_dssp(str(f))
+        assert text is not None
+        many = parse_dssp_output(text)
+        assert {k[0] for k in many} == set(_MANY_CHAIN_IDS)
+        for ch in _MANY_CHAIN_IDS:
+            per_chain = {(k[1], k[2]): v for k, v in many.items() if k[0] == ch}
+            assert per_chain == {(k[1], k[2]): v for k, v in single.items()}, ch
+
+    def test_batches_run_separately(self, tmp_path, monkeypatch):
+        f = tmp_path / "many.pdb"
+        _write_multichain_ubq(str(f), _MANY_CHAIN_IDS)
+        calls = []
+        real_run = dssp_module.subprocess.run
+
+        def counting_run(*args, **kwargs):
+            calls.append(args[0])
+            return real_run(*args, **kwargs)
+
+        monkeypatch.setattr(dssp_module.subprocess, "run", counting_run)
+        run_dssp(str(f))
+        assert len(calls) == 2  # 26 + 4 chains
+
+    def test_failed_batch_warns_and_keeps_others(self, tmp_path, monkeypatch):
+        f = tmp_path / "many.pdb"
+        _write_multichain_ubq(str(f), _MANY_CHAIN_IDS)
+        real_run = dssp_module.subprocess.run
+        state = {"n": 0}
+
+        def fail_second(*args, **kwargs):
+            state["n"] += 1
+            if state["n"] == 2:
+                raise subprocess.TimeoutExpired(cmd=args[0], timeout=1)
+            return real_run(*args, **kwargs)
+
+        monkeypatch.setattr(dssp_module.subprocess, "run", fail_second)
+        with pytest.warns(UserWarning, match="chain batch 2/2"):
+            text = run_dssp(str(f))
+        chains = {k[0] for k in parse_dssp_output(text)}
+        assert chains == set(_MANY_CHAIN_IDS[:26])
 
 
 class TestDsspIntegration:

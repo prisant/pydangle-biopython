@@ -153,6 +153,13 @@ on ``$PATH`` (``apt install dssp`` on Debian/Ubuntu, or
 ``conda install -c conda-forge dssp``).  If ``mkdssp`` is not found,
 DSSP labels return ``__?__``.
 
+mkdssp 4.x's classic output format holds at most 26 distinct chain IDs;
+beyond that it silently omits the surplus chains.  Structures with more
+than 26 chains are therefore run through mkdssp in consecutive batches
+of 26 chains and the per-residue assignments merged.  Hydrogen bonds
+between residues in different batches are not seen, so a helix or
+strand spanning a batch boundary can lose its assignment there.
+
 ### Builtin labels
 
 `rama_category` (also `rama6`) assigns wwPDB Validation Task Force Ramachandran

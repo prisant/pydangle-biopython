@@ -22,7 +22,7 @@ import shutil
 import subprocess
 import tempfile
 import warnings
-from typing import Any
+from typing import IO, Any
 
 # ---------------------------------------------------------------------------
 # mkdssp binary discovery
@@ -39,6 +39,19 @@ def find_mkdssp() -> str | None:
 
 # Record prefixes that cause mkdssp 4.x failures
 _STRIP_PREFIXES = ("ANISOU", "SIGATM", "SIGUIJ")
+
+#: mkdssp 4.x classic-format output holds at most this many distinct
+#: chain IDs.  Beyond it mkdssp exits 1 with "This file contains data
+#: that won't fit in the original DSSP format" and silently omits the
+#: surplus chains from the residue table.  Structures with more chains
+#: are run in batches of this size (see ``_run_dssp_chain_batched``),
+#: following richardson-dataset-curation ``pipeline/dssp_chain_batch_fix.py``.
+CHAIN_BATCH_SIZE = 26
+
+#: Timeouts (seconds) for a whole-structure mkdssp run and for one batch
+#: (the latter matches ``dssp_chain_batch_fix.py``).
+_RUN_TIMEOUT = 120
+_BATCH_TIMEOUT = 300
 
 
 def _needs_pdb_cleanup(filepath: str) -> bool:
@@ -137,6 +150,122 @@ def _clean_pdb_for_dssp(filepath: str) -> str:
     return tmp_name
 
 
+def _chains_in_file(filepath: str) -> list[str]:
+    """Distinct chain IDs from ATOM records, in file order.
+
+    Same rule as ``chains_in_pdb`` in ``dssp_chain_batch_fix.py``.
+    """
+    seen: set[str] = set()
+    ordered: list[str] = []
+    with open(filepath, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("ATOM  ") and len(line) > 21:
+                ch = line[21]
+                if ch not in seen:
+                    seen.add(ch)
+                    ordered.append(ch)
+    return ordered
+
+
+def _write_chain_batch(src: str, keep_chains: set[str], out: IO[str]) -> None:
+    """Write the records of *src* belonging to *keep_chains* to *out*.
+
+    Same record filter as ``write_clean_batch_pdb`` in
+    ``dssp_chain_batch_fix.py``: HEADER and CRYST1 always; SEQRES when
+    its column-12 chain is kept; ATOM/TER/HETATM when the column-22
+    chain is kept.  *src* is expected to be already cleaned.
+    """
+    with open(src, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith(("HEADER", "CRYST1")):
+                out.write(line)
+            elif line.startswith("SEQRES"):
+                if len(line) > 11 and line[11] in keep_chains:
+                    out.write(line)
+            elif line.startswith(("ATOM  ", "TER   ", "HETATM")):
+                if len(line) > 21 and line[21] in keep_chains:
+                    out.write(line)
+    out.write("END\n")
+
+
+def _run_mkdssp(exe: str, path: str, timeout: int) -> str | None:
+    """Run mkdssp once; return stdout if it holds a residue table, else None.
+
+    stdout is accepted even when mkdssp exits nonzero, as long as it
+    contains the residue-table marker (see ``run_dssp``).
+    """
+    try:
+        result = subprocess.run(
+            [exe, "--output-format=dssp", path],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if "#  RESIDUE" not in result.stdout:
+        return None
+    return result.stdout
+
+
+def _run_dssp_chain_batched(
+    exe: str, path: str, chains: list[str],
+) -> str | None:
+    """Run mkdssp in batches of ``CHAIN_BATCH_SIZE`` chains and merge.
+
+    Mirrors ``run_dssp_chain_batched`` in ``dssp_chain_batch_fix.py``:
+    chains in file order are split into consecutive batches, each batch
+    is written with ``_write_chain_batch`` and run separately.  The
+    returned text is the first successful batch's complete output
+    followed by the residue-table lines of the remaining batches.
+    Unlike the pipeline module, sequential indices and BP1/BP2 columns
+    are not renumbered: pydangle only reads each residue's chain,
+    number, insertion code and structure code.
+
+    Hydrogen bonds between residues in different batches are not seen
+    by mkdssp, so a strand or helix that spans a batch boundary can
+    lose its assignment there (documented in ``dssp_chain_batch_fix.py``).
+
+    A failed batch triggers a warning naming the file and the batch's
+    chains; the other batches are still used.  Returns None only if
+    every batch fails.
+    """
+    batches = [
+        chains[i:i + CHAIN_BATCH_SIZE]
+        for i in range(0, len(chains), CHAIN_BATCH_SIZE)
+    ]
+    merged: list[str] = []
+    for i, batch in enumerate(batches):
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".pdb", delete=False,
+        ) as tmp:
+            _write_chain_batch(path, set(batch), tmp)
+            tmp_name = tmp.name
+        try:
+            text = _run_mkdssp(exe, tmp_name, _BATCH_TIMEOUT)
+        finally:
+            os.unlink(tmp_name)
+        if text is None:
+            warnings.warn(
+                f"mkdssp failed on {path}, chain batch {i + 1}/{len(batches)} "
+                f"(chains {''.join(batch)}); those residues get no DSSP code",
+                stacklevel=2,
+            )
+            continue
+        if not merged:
+            merged.append(text if text.endswith("\n") else text + "\n")
+        else:
+            lines = text.splitlines(keepends=True)
+            start = next(
+                (j + 1 for j, line in enumerate(lines)
+                 if line.lstrip().startswith("#  RESIDUE")),
+                len(lines),
+            )
+            merged.extend(lines[start:])
+    return "".join(merged) if merged else None
+
+
 def run_dssp(filepath: str) -> str | None:
     """Run mkdssp on *filepath* and return the classic-format output.
 
@@ -150,16 +279,19 @@ def run_dssp(filepath: str) -> str | None:
     alignment), and blank chain IDs are filled (they cause parse
     failures on old PDB depositions).
 
-    mkdssp 4.x exits 1 with the message "This file contains data that
-    won't fit in the original DSSP format" for structures whose HEADER
-    or COMPND fields exceed legacy fixed-width column widths (typically
-    multi-chain structures with >9 chains and long molecule descriptors,
-    e.g. 1h64, 1ryp, 2zzs, 3mt6 in top8000).  The residue-by-residue
-    secondary-structure data in stdout is nonetheless complete and
-    correct in this case (verified residue-identical against mkdssp's
-    file-output mode which exits 0 for the same input).  This wrapper
-    treats stdout as authoritative when it contains the residue-table
-    marker, regardless of returncode.
+    Structures with more than ``CHAIN_BATCH_SIZE`` (26) distinct chain
+    IDs exceed mkdssp 4.x's classic-format limit: mkdssp exits 1 with
+    "This file contains data that won't fit in the original DSSP
+    format" and its residue table omits every chain after the 26th.
+    (An earlier version of this docstring attributed that message to
+    header-field overflow and called the table complete; for top8000
+    1h64, 1ryp, 2zzs and 3mt6 -- 28, 28, 32 and 56 chains -- it was
+    truncated.)  Such structures are therefore run in chain batches by
+    ``_run_dssp_chain_batched``; the decision depends only on the
+    chain count of the input, not on timing.
+
+    For a whole-structure run, stdout is accepted whenever it contains
+    the residue-table marker, regardless of returncode.
     """
     exe = find_mkdssp()
     if exe is None:
@@ -178,23 +310,10 @@ def run_dssp(filepath: str) -> str | None:
         run_path = filepath
 
     try:
-        result = subprocess.run(
-            [exe, "--output-format=dssp", run_path],
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=False,
-        )
-        # mkdssp 4.x exits 1 with a "won't fit in original DSSP format"
-        # warning for structures whose header fields overflow legacy
-        # fixed-width columns; the residue table in stdout is still
-        # complete and correct.  Trust stdout when it contains the
-        # residue-table marker, regardless of returncode.
-        if "#  RESIDUE" not in result.stdout:
-            return None
-        return result.stdout
-    except (subprocess.TimeoutExpired, OSError):
-        return None
+        chains = _chains_in_file(run_path)
+        if len(chains) > CHAIN_BATCH_SIZE:
+            return _run_dssp_chain_batched(exe, run_path, chains)
+        return _run_mkdssp(exe, run_path, _RUN_TIMEOUT)
     finally:
         if tmp_path is not None:
             os.unlink(tmp_path)
