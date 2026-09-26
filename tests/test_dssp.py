@@ -8,6 +8,7 @@ import pytest
 
 from pydangle_biopython import dssp as dssp_module
 from pydangle_biopython.dssp import (
+    DsspWarning,
     _clean_pdb_for_dssp,
     _needs_pdb_cleanup,
     find_mkdssp,
@@ -42,7 +43,8 @@ class TestRunDssp:
         assert "#  RESIDUE AA" in result
 
     def test_nonexistent_file_returns_none(self):
-        result = run_dssp("/nonexistent/file.pdb")
+        with pytest.warns(DsspWarning, match="file not found"):
+            result = run_dssp("/nonexistent/file.pdb")
         assert result is None
 
     def test_accepts_stdout_when_returncode_nonzero_with_residue_table(
@@ -93,7 +95,17 @@ class TestRunDssp:
             )
 
         monkeypatch.setattr(dssp_module.subprocess, "run", fake_run)
-        result = run_dssp(UBQ_PATH)
+        with pytest.warns(DsspWarning, match="no residue table"):
+            result = run_dssp(UBQ_PATH)
+        assert result is None
+
+    def test_timeout_warns_with_file_and_reason(self, monkeypatch):
+        def fake_run(*args, **kwargs):
+            raise subprocess.TimeoutExpired(cmd=args[0], timeout=120)
+
+        monkeypatch.setattr(dssp_module.subprocess, "run", fake_run)
+        with pytest.warns(DsspWarning, match=r"1ubq\.pdb: mkdssp timed out"):
+            result = run_dssp(UBQ_PATH)
         assert result is None
 
 
@@ -448,7 +460,7 @@ class TestChainBatching:
             return real_run(*args, **kwargs)
 
         monkeypatch.setattr(dssp_module.subprocess, "run", fail_second)
-        with pytest.warns(UserWarning, match="chain batch 2/2"):
+        with pytest.warns(DsspWarning, match="chain batch 2/2"):
             text = run_dssp(str(f))
         chains = {k[0] for k in parse_dssp_output(text)}
         assert chains == set(_MANY_CHAIN_IDS[:26])

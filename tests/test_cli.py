@@ -5,7 +5,7 @@ import json
 import pytest
 
 from pydangle_biopython import __version__
-from pydangle_biopython.main import _guess_format, main
+from pydangle_biopython.main import EXIT_DSSP_INCOMPLETE, _guess_format, main
 from tests.conftest import HEXAPEPTIDE_PDB, RNA_DINUCLEOTIDE_PDB
 
 # ---------------------------------------------------------------------------
@@ -300,3 +300,51 @@ class TestCLI:
         parallel_out = capsys.readouterr().out
 
         assert serial_out == parallel_out
+
+
+class TestDsspFailureExitCode:
+    """DSSP failures must be reported per file and change the exit status.
+
+    mkdssp is made unfindable by pointing PATH at an empty directory; the
+    setting is inherited by -j worker processes, so both code paths run
+    for real.
+    """
+
+    @pytest.fixture
+    def pdb_file(self, tmp_path):
+        f = tmp_path / "test.pdb"
+        f.write_text(HEXAPEPTIDE_PDB)
+        return str(f)
+
+    @pytest.fixture
+    def no_mkdssp(self, tmp_path, monkeypatch):
+        empty = tmp_path / "empty_bin"
+        empty.mkdir()
+        monkeypatch.setenv("PATH", str(empty))
+
+    @pytest.mark.parametrize("jobs", ["1", "2"])
+    def test_exit_3_names_file_and_still_writes_output(
+        self, tmp_path, no_mkdssp, capfd, jobs,
+    ):
+        # capfd (not capsys): with -j the per-file warnings are printed by
+        # worker processes, visible only at the file-descriptor level.
+        files = []
+        for name in ("one.pdb", "two.pdb"):
+            f = tmp_path / name
+            f.write_text(HEXAPEPTIDE_PDB)
+            files.append(str(f))
+        ret = main(["-c", "phi; dssp", "-j", jobs, *files])
+        captured = capfd.readouterr()
+        assert ret == EXIT_DSSP_INCOMPLETE == 3
+        data = [ln for ln in captured.out.splitlines() if not ln.startswith("#")]
+        assert {ln.split(":")[0] for ln in data} == {"one.pdb", "two.pdb"}
+        assert all(ln.endswith(":__?__") for ln in data)
+        assert captured.err.count("no DSSP assignments for") == 2
+        assert "mkdssp not found on PATH" in captured.err
+        assert "2 file(s)" in captured.err
+        assert "one.pdb" in captured.err and "two.pdb" in captured.err
+
+    def test_no_dssp_label_no_failure(self, pdb_file, no_mkdssp, capsys):
+        ret = main(["-c", "phi; psi", pdb_file])
+        assert ret == 0
+        assert "DSSP" not in capsys.readouterr().err

@@ -151,7 +151,11 @@ to assign per-residue secondary structure using the Kabsch & Sander
 hydrogen-bond energy method.  This requires ``mkdssp`` to be installed
 on ``$PATH`` (``apt install dssp`` on Debian/Ubuntu, or
 ``conda install -c conda-forge dssp``).  If ``mkdssp`` is not found,
-DSSP labels return ``__?__``.
+DSSP labels return ``__?__``.  Whenever a file gets no (or only partial)
+DSSP assignments -- mkdssp missing, timed out or failed -- a warning
+naming the file and reason is printed to stderr, and the command exits
+with status 3 after writing all output, so incomplete DSSP columns are
+never produced silently.
 
 mkdssp 4.x's classic output format holds at most 26 distinct chain IDs;
 beyond that it silently omits the surplus chains.  Structures with more

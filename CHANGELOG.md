@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- fix: run mkdssp in 26-chain batches for structures with >26 chains (7e37b48)
+- fix: report every DSSP failure per file and exit 3 when any occurred (cd718dc)
+- fix: run mkdssp in 26-chain batches for structures with >26 chains (f08e359)
 - fix: accept mkdssp stdout when returncode is non-zero but residue table is present (c45effa)
 - fix: also strip non-protein HETATM records before invoking mkdssp (5eaed6b)
 - fix: also fill blank chain ID in SEQRES (column 12), not just ATOM (5e79f71)

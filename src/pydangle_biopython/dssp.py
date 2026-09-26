@@ -54,6 +54,16 @@ _RUN_TIMEOUT = 120
 _BATCH_TIMEOUT = 300
 
 
+class DsspWarning(UserWarning):
+    """A structure (or part of one) got no DSSP assignments.
+
+    Issued with the file name and reason whenever mkdssp is missing,
+    times out, fails, or a chain batch fails.  The command-line
+    interface counts these per file and exits nonzero if any occurred,
+    so affected residues (``dssp`` = null) are never silently produced.
+    """
+
+
 def _needs_pdb_cleanup(filepath: str) -> bool:
     """Check if a PDB file needs cleanup before mkdssp."""
     with open(filepath, encoding="utf-8") as fh:
@@ -188,11 +198,13 @@ def _write_chain_batch(src: str, keep_chains: set[str], out: IO[str]) -> None:
     out.write("END\n")
 
 
-def _run_mkdssp(exe: str, path: str, timeout: int) -> str | None:
-    """Run mkdssp once; return stdout if it holds a residue table, else None.
+def _run_mkdssp(exe: str, path: str, timeout: int) -> tuple[str | None, str]:
+    """Run mkdssp once.
 
-    stdout is accepted even when mkdssp exits nonzero, as long as it
-    contains the residue-table marker (see ``run_dssp``).
+    Returns ``(stdout, "")`` if stdout holds a residue table, else
+    ``(None, reason)``.  stdout is accepted even when mkdssp exits
+    nonzero, as long as it contains the residue-table marker (see
+    ``run_dssp``).
     """
     try:
         result = subprocess.run(
@@ -202,15 +214,18 @@ def _run_mkdssp(exe: str, path: str, timeout: int) -> str | None:
             timeout=timeout,
             check=False,
         )
-    except (subprocess.TimeoutExpired, OSError):
-        return None
+    except subprocess.TimeoutExpired:
+        return None, f"timed out after {timeout} s"
+    except OSError as exc:
+        return None, f"could not run mkdssp: {exc}"
     if "#  RESIDUE" not in result.stdout:
-        return None
-    return result.stdout
+        last = result.stderr.strip().splitlines()[-1] if result.stderr.strip() else ""
+        return None, f"no residue table (exit {result.returncode}) {last}".rstrip()
+    return result.stdout, ""
 
 
 def _run_dssp_chain_batched(
-    exe: str, path: str, chains: list[str],
+    exe: str, path: str, chains: list[str], display_name: str,
 ) -> str | None:
     """Run mkdssp in batches of ``CHAIN_BATCH_SIZE`` chains and merge.
 
@@ -227,9 +242,9 @@ def _run_dssp_chain_batched(
     by mkdssp, so a strand or helix that spans a batch boundary can
     lose its assignment there (documented in ``dssp_chain_batch_fix.py``).
 
-    A failed batch triggers a warning naming the file and the batch's
-    chains; the other batches are still used.  Returns None only if
-    every batch fails.
+    A failed batch issues a ``DsspWarning`` naming *display_name* (the
+    original input file) and the batch's chains; the other batches are
+    still used.  Returns None only if every batch fails.
     """
     batches = [
         chains[i:i + CHAIN_BATCH_SIZE]
@@ -243,13 +258,15 @@ def _run_dssp_chain_batched(
             _write_chain_batch(path, set(batch), tmp)
             tmp_name = tmp.name
         try:
-            text = _run_mkdssp(exe, tmp_name, _BATCH_TIMEOUT)
+            text, reason = _run_mkdssp(exe, tmp_name, _BATCH_TIMEOUT)
         finally:
             os.unlink(tmp_name)
         if text is None:
             warnings.warn(
-                f"mkdssp failed on {path}, chain batch {i + 1}/{len(batches)} "
-                f"(chains {''.join(batch)}); those residues get no DSSP code",
+                f"mkdssp failed on {display_name}, chain batch "
+                f"{i + 1}/{len(batches)} (chains {''.join(batch)}): {reason}; "
+                f"those residues get no DSSP code",
+                DsspWarning,
                 stacklevel=2,
             )
             continue
@@ -292,9 +309,21 @@ def run_dssp(filepath: str) -> str | None:
 
     For a whole-structure run, stdout is accepted whenever it contains
     the residue-table marker, regardless of returncode.
+
+    Every failure issues a ``DsspWarning`` naming *filepath* and the
+    reason, and the function returns None (or, for a partly failed
+    chain-batched run, the assignments of the batches that succeeded).
     """
+    def fail(reason: str) -> None:
+        warnings.warn(
+            f"no DSSP assignments for {filepath}: {reason}",
+            DsspWarning,
+            stacklevel=3,
+        )
+
     exe = find_mkdssp()
     if exe is None:
+        fail("mkdssp not found on PATH (install with: apt install dssp)")
         return None
 
     # Clean PDB if needed (mkdssp 4.x workarounds)
@@ -302,6 +331,7 @@ def run_dssp(filepath: str) -> str | None:
     try:
         needs_clean = _needs_pdb_cleanup(filepath)
     except FileNotFoundError:
+        fail("file not found")
         return None
     if needs_clean:
         tmp_path = _clean_pdb_for_dssp(filepath)
@@ -312,8 +342,14 @@ def run_dssp(filepath: str) -> str | None:
     try:
         chains = _chains_in_file(run_path)
         if len(chains) > CHAIN_BATCH_SIZE:
-            return _run_dssp_chain_batched(exe, run_path, chains)
-        return _run_mkdssp(exe, run_path, _RUN_TIMEOUT)
+            batched = _run_dssp_chain_batched(exe, run_path, chains, filepath)
+            if batched is None:
+                fail(f"all chain batches failed ({len(chains)} chains)")
+            return batched
+        text, reason = _run_mkdssp(exe, run_path, _RUN_TIMEOUT)
+        if text is None:
+            fail(f"mkdssp {reason}")
+        return text
     finally:
         if tmp_path is not None:
             os.unlink(tmp_path)
@@ -422,15 +458,11 @@ def get_dssp_assignments_for_file(filepath: str) -> (
 ):
     """Run mkdssp on *filepath* and return assignments.
 
-    Issues a warning if mkdssp is not available.
+    Returns None if no assignments could be computed; ``run_dssp`` has
+    then already issued a ``DsspWarning`` naming the file and reason.
     """
     text = run_dssp(filepath)
     if text is None:
-        warnings.warn(
-            "mkdssp not found or failed. "
-            "Install with: apt install dssp",
-            stacklevel=2,
-        )
         return None
     return parse_dssp_output(text)
 
