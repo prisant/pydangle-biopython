@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- fix: report every DSSP failure per file and exit 3 when any occurred (cd718dc)
+- feat: record mkdssp path and version in the JSONL metadata record (60b68d4)
+- fix: report every DSSP failure per file and exit 3 when any occurred (b4ccd94)
 - fix: run mkdssp in 26-chain batches for structures with >26 chains (f08e359)
 - fix: accept mkdssp stdout when returncode is non-zero but residue table is present (c45effa)
 - fix: also strip non-protein HETATM records before invoking mkdssp (5eaed6b)

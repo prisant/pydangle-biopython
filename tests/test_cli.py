@@ -5,6 +5,7 @@ import json
 import pytest
 
 from pydangle_biopython import __version__
+from pydangle_biopython.dssp import find_mkdssp, mkdssp_version
 from pydangle_biopython.main import EXIT_DSSP_INCOMPLETE, _guess_format, main
 from tests.conftest import HEXAPEPTIDE_PDB, RNA_DINUCLEOTIDE_PDB
 
@@ -348,3 +349,40 @@ class TestDsspFailureExitCode:
         ret = main(["-c", "phi; psi", pdb_file])
         assert ret == 0
         assert "DSSP" not in capsys.readouterr().err
+
+
+class TestMkdsspMetadata:
+    """The JSONL metadata record states which mkdssp produced DSSP labels."""
+
+    @pytest.fixture
+    def pdb_file(self, tmp_path):
+        f = tmp_path / "test.pdb"
+        f.write_text(HEXAPEPTIDE_PDB)
+        return str(f)
+
+    def _meta(self, out):
+        return json.loads(out.splitlines()[0])
+
+    @pytest.mark.skipif(find_mkdssp() is None, reason="mkdssp not installed")
+    def test_dssp_run_records_version_and_path(self, pdb_file, capsys):
+        ret = main(["-o", "jsonl", "-c", "phi; dssp", pdb_file])
+        meta = self._meta(capsys.readouterr().out)
+        assert ret == 0
+        assert meta["mkdssp_path"] == find_mkdssp()
+        assert meta["mkdssp_version"] == mkdssp_version()
+
+    def test_no_dssp_label_no_mkdssp_fields(self, pdb_file, capsys):
+        main(["-o", "jsonl", "-c", "phi; psi", pdb_file])
+        meta = self._meta(capsys.readouterr().out)
+        assert "mkdssp_version" not in meta and "mkdssp_path" not in meta
+
+    def test_missing_mkdssp_recorded_as_null(
+        self, pdb_file, tmp_path, monkeypatch, capsys,
+    ):
+        empty = tmp_path / "empty_bin"
+        empty.mkdir()
+        monkeypatch.setenv("PATH", str(empty))
+        ret = main(["-o", "jsonl", "-c", "dssp3", pdb_file])
+        meta = self._meta(capsys.readouterr().out)
+        assert ret == EXIT_DSSP_INCOMPLETE
+        assert meta["mkdssp_path"] is None and meta["mkdssp_version"] is None

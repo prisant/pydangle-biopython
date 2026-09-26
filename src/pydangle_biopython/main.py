@@ -13,9 +13,10 @@ from typing import Any
 from Bio.PDB import MMCIFParser, PDBParser  # type: ignore[attr-defined]
 
 from pydangle_biopython import __version__
-from pydangle_biopython.dssp import DsspWarning
+from pydangle_biopython.dssp import DsspWarning, find_mkdssp, mkdssp_version
 from pydangle_biopython.fileinput import collect_files
 from pydangle_biopython.measure import process_measurement_commands
+from pydangle_biopython.parser import command_string_parser
 
 #: Exit status when output was written but some files got no (or only
 #: partial) DSSP assignments.  1 is used for input errors, 2 by argparse.
@@ -85,6 +86,19 @@ def _guess_format(filepath: str) -> str:
 # ---------------------------------------------------------------------------
 
 DEFAULT_COMMANDS = "phi; psi; chi1; chi2; chi3; chi4"
+
+
+def _requests_dssp(command_string: str) -> bool:
+    """True if *command_string* asks for a DSSP label (``dssp``/``dssp3``).
+
+    Same test as ``process_measurement_commands``.  An unparsable
+    command string returns False; the error surfaces per file.
+    """
+    try:
+        commands = command_string_parser(command_string)
+    except Exception:
+        return False
+    return any(cmd[0] == "label" and cmd[1] in {"dssp", "dssp3"} for cmd in commands)
 
 
 # ---------------------------------------------------------------------------
@@ -378,6 +392,10 @@ def main(argv: list[str] | None = None) -> int:
         }
         if chain_filter:
             meta["chain_filter"] = list(chain_filter)
+        if _requests_dssp(command_string):
+            exe = find_mkdssp()
+            meta["mkdssp_path"] = exe
+            meta["mkdssp_version"] = mkdssp_version(exe)
         print(json.dumps(meta, separators=(",", ":")))
 
     dssp_failed_files: list[str] = []

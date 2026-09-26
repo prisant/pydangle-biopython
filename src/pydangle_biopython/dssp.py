@@ -33,6 +33,31 @@ def find_mkdssp() -> str | None:
     return shutil.which("mkdssp")
 
 
+def mkdssp_version(exe: str | None = None) -> str | None:
+    """Return the version reported by ``mkdssp --version`` (e.g. ``"4.2.2"``).
+
+    Uses *exe* or, if omitted, the ``mkdssp`` found on ``$PATH``.
+    Returns None if mkdssp is not found or reports no version.  Recorded
+    in the JSONL metadata record because DSSP assignments depend on the
+    mkdssp version (e.g. 4.2.2 vs 4.6.1 differ in beta-bridge calls).
+    """
+    exe = exe or find_mkdssp()
+    if exe is None:
+        return None
+    try:
+        result = subprocess.run(
+            [exe, "--version"], capture_output=True, text=True,
+            timeout=30, check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    for line in (result.stdout + result.stderr).splitlines():
+        words = line.split()
+        if "version" in words and words.index("version") + 1 < len(words):
+            return words[words.index("version") + 1]
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Run mkdssp and parse output
 # ---------------------------------------------------------------------------

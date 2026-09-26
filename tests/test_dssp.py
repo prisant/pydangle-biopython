@@ -36,6 +36,19 @@ class TestFindMkdssp:
         assert find_mkdssp() is not None
 
 
+class TestMkdsspVersion:
+    def test_reports_dotted_version(self):
+        import re
+
+        from pydangle_biopython.dssp import mkdssp_version
+        v = mkdssp_version()
+        assert v is not None and re.fullmatch(r"\d+(\.\d+)+", v), v
+
+    def test_missing_binary_returns_none(self):
+        from pydangle_biopython.dssp import mkdssp_version
+        assert mkdssp_version("/nonexistent/mkdssp") is None
+
+
 class TestRunDssp:
     def test_returns_output(self):
         result = run_dssp(UBQ_PATH)

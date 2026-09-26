@@ -155,7 +155,9 @@ DSSP labels return ``__?__``.  Whenever a file gets no (or only partial)
 DSSP assignments -- mkdssp missing, timed out or failed -- a warning
 naming the file and reason is printed to stderr, and the command exits
 with status 3 after writing all output, so incomplete DSSP columns are
-never produced silently.
+never produced silently.  Because assignments depend on the mkdssp
+version, JSONL output records ``mkdssp_path`` and ``mkdssp_version`` in
+its first (``_meta``) line whenever a DSSP label is requested.
 
 mkdssp 4.x's classic output format holds at most 26 distinct chain IDs;
 beyond that it silently omits the surplus chains.  Structures with more
