@@ -124,3 +124,130 @@ def rna_structure():
 def rna_chain(rna_structure):
     """Return chain A from the RNA structure."""
     return rna_structure[0]["A"]
+
+
+# ---------------------------------------------------------------------------
+# Sample PDB: 1gk8 chain C residues 254-258 (ALA VAL SMC ALA LYS), heavy atoms
+# SMC 256 (S-methylcysteine) is a HETATM modified residue inside a helix,
+# not on the Java Dangle whitelist.  Regression fixture for the continuity
+# bug reported by C. Williams 2026-11-07.  Coordinates from the top2018
+# ersatz file (Reduce hydrogens removed).  Reference values, Java Dangle 1.07
+# on the full 1gk8_ersatz.pdb:
+#   VAL 255  psi -42.763
+#   ALA 257  phi -56.602  psi -47.184  omega 173.232
+# Source: 1gk8.pdb (Taylor et al., 2001)
+# ---------------------------------------------------------------------------
+SMC_HELIX_PDB = """\
+HEADER    1GK8 CHAIN C 254-258 WITH SMC 256
+ATOM   5631  N   ALA C 254      19.521  30.626   2.278  1.00  6.96           N
+ATOM   5632  CA  ALA C 254      19.580  31.938   2.895  1.00  7.16           C
+ATOM   5633  C   ALA C 254      18.535  32.058   3.994  1.00  7.26           C
+ATOM   5634  O   ALA C 254      18.816  32.627   5.068  1.00  7.13           O
+ATOM   5635  CB  ALA C 254      19.372  33.008   1.835  1.00  7.07           C
+ATOM   5636  N   VAL C 255      17.314  31.582   3.742  1.00  7.12           N
+ATOM   5637  CA  VAL C 255      16.258  31.637   4.748  1.00  7.55           C
+ATOM   5638  C   VAL C 255      16.646  30.874   6.006  1.00  7.07           C
+ATOM   5639  O   VAL C 255      16.413  31.333   7.130  1.00  7.71           O
+ATOM   5640  CB  VAL C 255      14.929  31.100   4.175  1.00  7.63           C
+ATOM   5641  CG1 VAL C 255      13.897  30.852   5.261  1.00  7.75           C
+ATOM   5642  CG2 VAL C 255      14.384  32.077   3.139  1.00  7.38           C
+HETATM 5643  N   SMC C 256      17.238  29.695   5.838  1.00  6.89           N
+HETATM 5644  CA  SMC C 256      17.659  28.913   7.015  1.00  7.83           C
+HETATM 5645  CB  SMC C 256      18.177  27.558   6.551  1.00  8.04           C
+HETATM 5646  SG  SMC C 256      18.961  26.581   7.847  1.00  6.85           S
+HETATM 5647  CS  SMC C 256      17.632  26.423   9.014  1.00  8.65           C
+HETATM 5648  C   SMC C 256      18.728  29.660   7.795  1.00  7.77           C
+HETATM 5649  O   SMC C 256      18.619  29.726   9.029  1.00  6.93           O
+ATOM   5650  N   ALA C 257      19.712  30.272   7.149  1.00  6.80           N
+ATOM   5651  CA  ALA C 257      20.669  31.118   7.858  1.00  7.56           C
+ATOM   5652  C   ALA C 257      19.977  32.228   8.623  1.00  8.15           C
+ATOM   5653  O   ALA C 257      20.306  32.497   9.792  1.00  8.05           O
+ATOM   5654  CB  ALA C 257      21.673  31.696   6.870  1.00  8.00           C
+ATOM   5655  N   LYS C 258      19.041  32.948   8.020  1.00  7.94           N
+ATOM   5656  CA  LYS C 258      18.232  33.954   8.685  1.00  7.97           C
+ATOM   5657  C   LYS C 258      17.586  33.392   9.943  1.00  7.79           C
+ATOM   5658  O   LYS C 258      17.638  33.993  11.022  1.00  7.92           O
+ATOM   5659  CB  LYS C 258      17.146  34.490   7.735  1.00  8.62           C
+ATOM   5660  CG  LYS C 258      16.130  35.415   8.381  1.00  9.44           C
+ATOM   5661  CD  LYS C 258      14.944  35.736   7.485  1.00 10.13           C
+ATOM   5662  CE  LYS C 258      13.855  36.471   8.234  1.00  9.89           C
+ATOM   5663  NZ  LYS C 258      14.173  37.896   8.494  1.00 10.16           N
+END
+"""
+
+
+@pytest.fixture
+def smc_helix_structure():
+    """Return 1gk8 C 254-258, with the SMC 256 HETATM residue."""
+    parser = PDBParser(QUIET=True)
+    return parser.get_structure("1gk8", io.StringIO(SMC_HELIX_PDB))
+
+
+@pytest.fixture
+def smc_deleted_structure():
+    """Return 1gk8 C 254-258 with SMC 256 removed (a real chain break)."""
+    text = "".join(
+        line + "\n"
+        for line in SMC_HELIX_PDB.splitlines()
+        if not line.startswith("HETATM")
+    )
+    parser = PDBParser(QUIET=True)
+    return parser.get_structure("1gk8gap", io.StringIO(text))
+
+
+# ---------------------------------------------------------------------------
+# Sample PDB: 1ctj chain A residues 1-3 (GLU ALA ASP), heavy atoms.
+# GLU 1 and ALA 2 have whole-residue alternates A (occ 0.49) and B (0.51);
+# C(1)--N(2) is bonded only within altloc A.  BioPython's PPBuilder would
+# switch just those two atoms to altloc A, mixing conformers (ALA 2 tau
+# 83.8 deg).  Fragment building must leave the default (B) selection
+# alone: ALA 2 tau from conformer B is 106.719 deg.
+# Source: 1ctj.pdb, from the top100 ersatz file (Reduce hydrogens removed)
+# ---------------------------------------------------------------------------
+ALTLOC_NTERM_PDB = """\
+HEADER    1CTJ CHAIN A 1-3 WITH WHOLE-RESIDUE ALTLOCS
+ATOM      1  N  AGLU A   1       4.127  26.179  -7.903  0.49 57.53           N
+ATOM      2  N  BGLU A   1       3.535  25.488 -12.889  0.51 54.52           N
+ATOM      3  CA AGLU A   1       5.490  26.607  -8.207  0.49 52.50           C
+ATOM      4  CA BGLU A   1       2.754  26.395 -12.051  0.51 51.27           C
+ATOM      5  C  AGLU A   1       5.550  27.734  -9.233  0.49 47.55           C
+ATOM      6  C  BGLU A   1       3.471  27.729 -11.891  0.51 49.70           C
+ATOM      7  O  AGLU A   1       4.982  28.809  -8.942  0.49 50.34           O
+ATOM      8  O  BGLU A   1       2.870  28.781 -12.098  0.51 49.78           O
+ATOM      9  CB AGLU A   1       6.372  25.388  -8.512  0.49 54.41           C
+ATOM     10  CB BGLU A   1       2.416  25.770 -10.696  0.51 52.50           C
+ATOM     11  CG AGLU A   1       7.853  25.736  -8.366  0.49 54.45           C
+ATOM     12  CG BGLU A   1       1.268  26.491 -10.006  0.51 54.28           C
+ATOM     13  CD AGLU A   1       8.764  24.531  -8.316  0.49 56.31           C
+ATOM     14  CD BGLU A   1       1.720  27.296  -8.799  0.51 55.22           C
+ATOM     15  OE1AGLU A   1       8.298  23.411  -8.022  0.49 60.72           O
+ATOM     16  OE1BGLU A   1       2.727  28.028  -8.909  0.51 55.30           O
+ATOM     17  OE2AGLU A   1       9.986  24.743  -8.482  0.49 59.28           O
+ATOM     18  OE2BGLU A   1       1.068  27.166  -7.733  0.51 55.05           O
+ATOM     19  N  AALA A   2       6.254  27.610 -10.341  0.49 39.82           N
+ATOM     20  N  BALA A   2       4.759  27.656 -11.589  0.51 47.24           N
+ATOM     21  CA AALA A   2       6.531  28.549 -11.391  0.49 40.63           C
+ATOM     22  CA BALA A   2       5.670  28.786 -11.571  0.51 44.89           C
+ATOM     23  C  AALA A   2       6.980  27.926 -12.710  0.49 38.03           C
+ATOM     24  C  BALA A   2       5.766  29.304 -13.027  0.51 42.80           C
+ATOM     25  O  AALA A   2       7.831  27.034 -12.721  0.49 32.72           O
+ATOM     26  O  BALA A   2       5.165  30.351 -13.297  0.51 41.12           O
+ATOM     27  CB AALA A   2       7.686  29.468 -10.955  0.49 40.12           C
+ATOM     28  CB BALA A   2       7.039  28.354 -11.070  0.51 43.42           C
+ATOM     29  N   ASP A   3       6.482  28.531 -13.792  1.00 36.71           N
+ATOM     30  CA  ASP A   3       6.844  28.172 -15.120  1.00 32.51           C
+ATOM     31  C   ASP A   3       8.056  28.945 -15.623  1.00 30.43           C
+ATOM     32  O   ASP A   3       7.982  29.944 -16.316  1.00 26.86           O
+ATOM     33  CB  ASP A   3       5.712  28.262 -16.130  1.00 31.89           C
+ATOM     34  CG  ASP A   3       5.940  27.498 -17.420  1.00 34.79           C
+ATOM     35  OD1 ASP A   3       7.066  27.105 -17.813  1.00 31.55           O
+ATOM     36  OD2 ASP A   3       4.871  27.304 -18.059  1.00 41.40           O
+END
+"""
+
+
+@pytest.fixture
+def altloc_nterm_structure():
+    """Return 1ctj A 1-3, whose first two residues have A/B alternates."""
+    parser = PDBParser(QUIET=True)
+    return parser.get_structure("1ctj", io.StringIO(ALTLOC_NTERM_PDB))

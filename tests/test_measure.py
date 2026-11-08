@@ -338,3 +338,70 @@ class TestProcessMeasurementCommands:
             assert record["rama_category"] is None or isinstance(
                 record["rama_category"], str
             )
+
+
+# ---------------------------------------------------------------------------
+# Continuity across modified residues (C. Williams, 1gk8 C 257, 2026-11-07)
+# ---------------------------------------------------------------------------
+
+
+def _records_by_resnum(structure, commands):
+    lines = process_measurement_commands(
+        "1gk8", structure, commands, output_format="jsonl"
+    )
+    return {json.loads(line)["resnum"]: json.loads(line) for line in lines}
+
+
+class TestModifiedResidueContinuity:
+    """Neighbour terms must use the real neighbour, not skip over it."""
+
+    COMMANDS = "phi; psi; omega; peptide_bond; rama_category"
+
+    def test_modified_residue_not_reported(self, smc_helix_structure):
+        records = _records_by_resnum(smc_helix_structure, self.COMMANDS)
+        assert 256 not in records  # SMC is not on the output whitelist
+        assert {254, 255, 257, 258} <= set(records)
+
+    def test_psi_before_modified_residue(self, smc_helix_structure):
+        records = _records_by_resnum(smc_helix_structure, self.COMMANDS)
+        # Java Dangle 1.07: -42.763 (the buggy value was 26.454)
+        assert records[255]["psi"] == pytest.approx(-42.763, abs=0.001)
+
+    def test_phi_omega_after_modified_residue(self, smc_helix_structure):
+        records = _records_by_resnum(smc_helix_structure, self.COMMANDS)
+        rec = records[257]
+        # Java Dangle 1.07: phi -56.602, psi -47.184, omega 173.232
+        # (the buggy values were phi 25.406, omega 77.506)
+        assert rec["phi"] == pytest.approx(-56.602, abs=0.001)
+        assert rec["psi"] == pytest.approx(-47.184, abs=0.001)
+        assert rec["omega"] == pytest.approx(173.232, abs=0.001)
+        assert rec["peptide_bond"] == "trans"
+
+    def test_no_measurement_across_real_break(self, smc_deleted_structure):
+        """With SMC 256 absent, C(255)-N(257) is 3.3 A: no peptide bond."""
+        records = _records_by_resnum(smc_deleted_structure, self.COMMANDS)
+        assert records[255]["psi"] is None
+        assert records[257]["phi"] is None
+        assert records[257]["omega"] is None
+        assert records[257]["peptide_bond"] is None
+
+
+class TestFragmentBuildingKeepsAltlocSelection:
+    """Peptide-bond detection must not change which altloc is measured."""
+
+    def test_selected_altlocs_unchanged(self, altloc_nterm_structure):
+        def selected(structure):
+            return {
+                (atom.get_parent().id[1], atom.get_id()): atom.get_altloc()
+                for atom in structure.get_atoms()
+                if atom.is_disordered()
+            }
+
+        before = selected(altloc_nterm_structure)
+        process_measurement_commands("1ctj", altloc_nterm_structure, "tau; phi")
+        assert selected(altloc_nterm_structure) == before
+
+    def test_tau_from_single_conformer(self, altloc_nterm_structure):
+        records = _records_by_resnum(altloc_nterm_structure, "tau; phi; psi")
+        # Conformer B throughout (default highest occupancy), not a mix
+        assert records[2]["tau"] == pytest.approx(106.719, abs=0.001)

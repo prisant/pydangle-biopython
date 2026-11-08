@@ -11,7 +11,7 @@ import math
 import random
 from typing import Any
 
-from Bio.PDB.Polypeptide import CaPPBuilder
+from Bio.PDB.Polypeptide import PPBuilder
 from Bio.PDB.vectors import Vector, calc_angle, calc_dihedral
 
 from pydangle_biopython.dssp import (
@@ -398,14 +398,58 @@ def _format_residue_id(residue: Any) -> str:
 # ---------------------------------------------------------------------------
 
 
+class _PeptideBondBuilder(PPBuilder):
+    """``PPBuilder`` whose bond test does not change altloc selection.
+
+    BioPython's ``PPBuilder._is_connected`` calls ``disordered_select``
+    on the C and N atoms of the bonded altloc pair.  That switches only
+    those two atoms to another conformer, so a residue with whole-residue
+    alternates is measured with atoms from two conformers (1ctj A2:
+    tau 83.8 deg).  Here the bond test is the same -- any compatible
+    altloc pair with C--N < radius -- but atom selection is left at
+    BioPython's default (highest occupancy), exactly as it was with
+    ``CaPPBuilder``.
+    """
+
+    def _is_connected(self, prev_res: Any, next_res: Any) -> bool:
+        if not prev_res.has_id("C") or not next_res.has_id("N"):
+            return False
+        c_atom = prev_res["C"]
+        n_atom = next_res["N"]
+        c_list = (
+            c_atom.disordered_get_list() if c_atom.is_disordered() else [c_atom]
+        )
+        n_list = (
+            n_atom.disordered_get_list() if n_atom.is_disordered() else [n_atom]
+        )
+        for n_alt in n_list:
+            for c_alt in c_list:
+                n_loc = n_alt.get_altloc()
+                c_loc = c_alt.get_altloc()
+                if n_loc == c_loc or " " in (n_loc, c_loc):
+                    if (c_alt - n_alt) < self.radius:
+                        return True
+        return False
+
+
 def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
     """Split a model into contiguous polypeptide fragments.
 
-    Uses BioPython's ``CaPPBuilder`` with ``aa_only=0`` to detect
-    chain breaks based on CA-CA distance (< 4.6 Angstrom), then
-    filters each fragment through the Java Dangle residue-name
-    whitelist.  For chains with no peptide fragments (e.g. nucleic
-    acids), falls back to the raw residue list.
+    Uses a BioPython ``PPBuilder`` (:class:`_PeptideBondBuilder`, which
+    leaves altloc selection untouched) with ``aa_only=0``: consecutive
+    residues are joined only when a peptide bond is present,
+    C(i)--N(i+1) < 1.8 Angstrom.  Modified amino acids (any residue
+    with a CA atom) stay in the fragment, so neighbour-dependent
+    measurements (phi, psi, omega, pre-Pro, ...) on the residues
+    beside them use the real neighbour's atoms.  The Java Dangle
+    residue-name whitelist is applied at output time by
+    :func:`process_measurement_for_residue`, never here: removing a
+    residue from inside a fragment would make its two neighbours
+    list-adjacent and corrupt every i-1 / i+1 term (reported by
+    C. Williams, 1gk8 C 257, 2026-11-07).
+
+    For chains with no peptide fragments (e.g. nucleic acids), falls
+    back to the raw residue list.
 
     Parameters
     ----------
@@ -417,7 +461,7 @@ def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
         Each tuple contains the chain identifier and a list of
         contiguous residues forming a polypeptide fragment.
     """
-    ppb = CaPPBuilder()  # type: ignore[no-untyped-call]
+    ppb = _PeptideBondBuilder()  # type: ignore[no-untyped-call]
     fragments: list[tuple[str, list[Any]]] = []
     for chain in model:
         pp_list = ppb.build_peptides(  # type: ignore[no-untyped-call]
@@ -426,9 +470,10 @@ def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
         )
         if pp_list:
             for pp in pp_list:
-                # Filter fragment to only keep whitelisted residues
-                residue_list = [r for r in pp if _is_polymer_residue(r)]
-                if residue_list:
+                # Keep every bonded residue; do NOT drop non-whitelisted
+                # residues here (see docstring).
+                residue_list = list(pp)
+                if any(_is_polymer_residue(r) for r in residue_list):
                     fragments.append((chain.id, residue_list))
         else:
             # No peptide fragments (e.g. nucleic acid chain).
