@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- docs: document dropping isolated residues and the 2.0 A bond test (6f40e57)
+- fix: give pre-Pro precedence over Ile/Val in rama_category (1787aea)
+- docs: document dropping isolated residues and the 2.0 A bond test (1a0e57e)
 - fix: treat C-N up to 2.0 A as a peptide bond, as Java Dangle does (a49ac5c)
 - fix: break fragments at peptide-bond gaps, not at dropped residues (5a22669)
 - feat: record mkdssp path and version in the JSONL metadata record (d979097)

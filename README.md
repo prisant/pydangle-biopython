@@ -173,6 +173,9 @@ categories (Read et al., Structure 19:1395–1412, 2011): General, Gly, IleVal,
 TransPro, CisPro, or PrePro.  Reduced schemes are available as `rama5`
 (merges cis/trans Pro), `rama4` (also merges IleVal into General), and
 `rama3` (General, Gly, Pro only, following Lovell et al. 2003).
+Precedence follows Read et al. 2011: Gly, Pro > pre-Pro > Ile/Val > general,
+so an Ile or Val followed by Pro is `PrePro` (versions before 2026-11-08
+labelled it `IleVal`).
 
 `is_cis` / `is_trans` classify the peptide bond based on the omega dihedral
 angle (cis when |ω| < 30°).  `peptide_bond` provides the same classification

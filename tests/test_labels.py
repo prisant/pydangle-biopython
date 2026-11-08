@@ -260,8 +260,8 @@ class TestRamaCategory:
         assert label_rama_category(residue_list, 1, UNK) == "Gly"
 
     def test_ileval_category(self, hexapeptide_chain):
-        """ILE at index 2 should be 'IleVal'."""
-        residue_list = list(hexapeptide_chain.get_residues())
+        """ILE not followed by PRO (last in fragment) should be 'IleVal'."""
+        residue_list = list(hexapeptide_chain.get_residues())[:3]
         assert label_rama_category(residue_list, 2, UNK) == "IleVal"
 
     def test_transpro_category(self, hexapeptide_chain):
@@ -280,9 +280,21 @@ class TestRamaCategory:
         assert label_rama_category(residue_list, 0, UNK) == "General"
 
     def test_prepro_ile(self, hexapeptide_chain):
-        """ILE at index 2 is IleVal, not PrePro (IleVal takes priority)."""
+        """ILE before PRO is PrePro: pre-Pro takes precedence over Ile/Val
+        (Read et al. 2011)."""
         residue_list = list(hexapeptide_chain.get_residues())
-        assert label_rama_category(residue_list, 2, UNK) == "IleVal"
+        assert label_rama_category(residue_list, 2, UNK) == "PrePro"
+
+    def test_pro_before_pro_is_pro(self, hexapeptide_chain):
+        """PRO followed by PRO stays a Pro category, not PrePro."""
+        residue_list = list(hexapeptide_chain.get_residues())
+        assert label_rama_category(residue_list, 3, UNK) == "TransPro"
+
+    def test_gly_before_pro_is_gly(self, hexapeptide_chain):
+        """GLY followed by PRO stays Gly, not PrePro."""
+        residues = list(hexapeptide_chain.get_residues())
+        residue_list = [residues[1], residues[3]]  # GLY, PRO
+        assert label_rama_category(residue_list, 0, UNK) == "Gly"
 
 
 class TestRamaVariants:
@@ -307,21 +319,28 @@ class TestRamaVariants:
         assert label_rama3(residue_list, 3, UNK) == 'Pro'
 
     def test_rama3_ileval_maps_to_general(self, hexapeptide_chain):
-        """ILE (index 2) maps to 'General' in rama3."""
+        """ILE (index 2, PrePro in rama6) maps to 'General' in rama3."""
         residue_list = list(hexapeptide_chain.get_residues())
         assert label_rama3(residue_list, 2, UNK) == 'General'
 
     def test_rama4_prepro(self, hexapeptide_chain):
-        """ILE (index 2) is IleVal in rama6 but PrePro check:
-        ILE before PRO maps to General in rama4 (IleVal takes priority
-        over PrePro in rama6, so it maps to General not PrePro)."""
+        """ILE before PRO (index 2) is PrePro in rama6, so PrePro in rama4."""
         residue_list = list(hexapeptide_chain.get_residues())
-        # ILE at index 2 is IleVal in rama6 -> General in rama4
+        assert label_rama4(residue_list, 2, UNK) == 'PrePro'
+
+    def test_rama4_ileval_maps_to_general(self, hexapeptide_chain):
+        """ILE not before PRO is IleVal in rama6 -> General in rama4."""
+        residue_list = list(hexapeptide_chain.get_residues())[:3]
         assert label_rama4(residue_list, 2, UNK) == 'General'
 
-    def test_rama5_ileval(self, hexapeptide_chain):
-        """ILE (index 2) should remain 'IleVal' in rama5."""
+    def test_rama5_prepro(self, hexapeptide_chain):
+        """ILE before PRO (index 2) is PrePro in rama5."""
         residue_list = list(hexapeptide_chain.get_residues())
+        assert label_rama5(residue_list, 2, UNK) == 'PrePro'
+
+    def test_rama5_ileval(self, hexapeptide_chain):
+        """ILE not before PRO stays 'IleVal' in rama5."""
+        residue_list = list(hexapeptide_chain.get_residues())[:3]
         assert label_rama5(residue_list, 2, UNK) == 'IleVal'
 
     def test_rama5_pro(self, hexapeptide_chain):

@@ -182,27 +182,28 @@ def label_rama_category(
 ) -> str:
     """Assign the wwPDB Ramachandran category for the residue.
 
-    Decision tree (Read et al. 2011, Richardson & Richardson):
+    Precedence (Read et al. 2011, Structure 19:1395-1412):
+    Gly, Pro > pre-Pro > Ile/Val > general.  Decision tree:
 
     1. Gly -> ``'Gly'``
-    2. Ile or Val -> ``'IleVal'``
-    3. Pro -> measure omega -> ``'CisPro'`` (|omega| < 30) or ``'TransPro'``
-    4. Next residue is Pro -> ``'PrePro'``
+    2. Pro -> measure omega -> ``'CisPro'`` (|omega| < 30) or ``'TransPro'``
+    3. Next residue is Pro -> ``'PrePro'`` (including Ile/Val before Pro)
+    4. Ile or Val -> ``'IleVal'``
     5. Otherwise -> ``'General'``
+
+    Versions before 2026-11-08 tested Ile/Val before pre-Pro, so Ile/Val
+    followed by Pro was wrongly labelled ``'IleVal'`` (``'General'`` in
+    rama4).
 
     Returns *unknown* if the residue identity cannot be determined.
     """
     resname = residue_list[index].get_resname()
 
-    # 1. Glycine
+    # 1. Glycine (takes precedence over pre-Pro)
     if resname == "GLY":
         return "Gly"
 
-    # 2. Ile / Val
-    if resname in ("ILE", "VAL"):
-        return "IleVal"
-
-    # 3. Proline -- subdivide by cis/trans
+    # 2. Proline -- subdivide by cis/trans (takes precedence over pre-Pro)
     if resname == "PRO":
         omega = _compute_omega(residue_list, index)
         if omega is None:
@@ -213,10 +214,14 @@ def label_rama_category(
             return "CisPro"
         return "TransPro"
 
-    # 4. Pre-proline
+    # 3. Pre-proline (takes precedence over Ile/Val)
     if index + 1 < len(residue_list):
         if residue_list[index + 1].get_resname() == "PRO":
             return "PrePro"
+
+    # 4. Ile / Val
+    if resname in ("ILE", "VAL"):
+        return "IleVal"
 
     # 5. General
     return "General"
