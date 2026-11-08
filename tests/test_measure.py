@@ -405,3 +405,16 @@ class TestFragmentBuildingKeepsAltlocSelection:
         records = _records_by_resnum(altloc_nterm_structure, "tau; phi; psi")
         # Conformer B throughout (default highest occupancy), not a mix
         assert records[2]["tau"] == pytest.approx(106.719, abs=0.001)
+
+
+class TestStretchedPeptideBond:
+    """C--N up to 2.0 Angstrom is a peptide bond, as in Java Dangle."""
+
+    def test_stretched_bond_is_joined(self, stretched_bond_structure):
+        records = _records_by_resnum(
+            stretched_bond_structure, "phi; psi; omega; peptide_bond"
+        )
+        # Java Dangle 1.07 on 1ihj_ersatz.pdb (top8000 regression)
+        assert records[40]["psi"] == pytest.approx(-158.676, abs=0.001)
+        assert records[41]["phi"] == pytest.approx(-105.926, abs=0.001)
+        assert records[41]["omega"] == pytest.approx(88.45, abs=0.001)

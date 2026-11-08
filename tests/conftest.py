@@ -251,3 +251,51 @@ def altloc_nterm_structure():
     """Return 1ctj A 1-3, whose first two residues have A/B alternates."""
     parser = PDBParser(QUIET=True)
     return parser.get_structure("1ctj", io.StringIO(ALTLOC_NTERM_PDB))
+
+
+# ---------------------------------------------------------------------------
+# Sample PDB: 1ihj chain A residues 39-42 (ASP SER PRO ASN), heavy atoms.
+# C(40)--N(41) is 1.981 Angstrom: stretched, but within Java Dangle's
+# C--N <= 2.0 bond test, so SER 40 psi and PRO 41 phi/omega are measured.
+# ---------------------------------------------------------------------------
+
+STRETCHED_BOND_PDB = """\
+HEADER    1IHJ CHAIN A 39-42, C(40)-N(41) 1.981 A
+ATOM    206  N   ASP A  39       1.339 -11.552 -17.780  1.00 47.72           N
+ATOM    207  CA  ASP A  39       2.562 -11.037 -18.307  1.00 49.70           C
+ATOM    208  C   ASP A  39       3.136 -11.945 -19.375  1.00 49.87           C
+ATOM    209  O   ASP A  39       3.659 -13.005 -19.042  1.00 53.20           O
+ATOM    210  CB  ASP A  39       3.507 -10.853 -17.129  1.00 51.18           C
+ATOM    211  CG  ASP A  39       2.923  -9.869 -16.126  1.00 53.09           C
+ATOM    212  OD1 ASP A  39       2.037  -9.078 -16.524  1.00 52.91           O
+ATOM    213  OD2 ASP A  39       3.334  -9.890 -14.949  1.00 54.93           O
+ATOM    214  N   SER A  40       2.917 -11.577 -20.614  1.00 49.44           N
+ATOM    215  CA  SER A  40       3.272 -12.395 -21.767  1.00 47.54           C
+ATOM    216  C   SER A  40       3.081 -11.625 -23.069  1.00 46.03           C
+ATOM    217  O   SER A  40       2.091 -10.881 -23.182  1.00 44.12           O
+ATOM    218  CB  SER A  40       2.448 -13.684 -21.783  1.00 48.56           C
+ATOM    219  OG  SER A  40       1.200 -13.485 -22.424  1.00 49.91           O
+ATOM    220  N   PRO A  41       2.971 -13.323 -24.083  1.00 43.78           N
+ATOM    221  CA  PRO A  41       1.614 -13.864 -24.169  1.00 42.31           C
+ATOM    222  C   PRO A  41       1.406 -15.084 -23.260  1.00 40.07           C
+ATOM    223  O   PRO A  41      -0.527 -16.225 -22.977  1.00 38.90           O
+ATOM    224  CB  PRO A  41       1.518 -14.371 -25.612  1.00 41.94           C
+ATOM    225  CG  PRO A  41       2.901 -14.759 -25.961  1.00 43.41           C
+ATOM    226  CD  PRO A  41       3.797 -13.862 -25.155  1.00 44.30           C
+ATOM    227  N   ASN A  42       1.682 -16.520 -22.512  1.00 38.23           N
+ATOM    228  CA  ASN A  42       1.423 -17.803 -21.897  1.00 35.25           C
+ATOM    229  C   ASN A  42       1.815 -17.784 -20.434  1.00 31.91           C
+ATOM    230  O   ASN A  42       1.998 -18.941 -19.860  1.00 27.12           O
+ATOM    231  CB  ASN A  42       2.102 -18.912 -22.693  1.00 39.94           C
+ATOM    232  CG  ASN A  42       1.574 -18.972 -24.114  1.00 44.65           C
+ATOM    233  OD1 ASN A  42       0.371 -18.829 -24.346  1.00 48.19           O
+ATOM    234  ND2 ASN A  42       2.468 -19.179 -25.072  1.00 47.86           N
+END
+"""
+
+
+@pytest.fixture
+def stretched_bond_structure():
+    """Return 1ihj A 39-42, whose 40-41 peptide bond is 1.981 Angstrom."""
+    parser = PDBParser(QUIET=True)
+    return parser.get_structure("1ihj", io.StringIO(STRETCHED_BOND_PDB))

@@ -398,6 +398,13 @@ def _format_residue_id(residue: Any) -> str:
 # ---------------------------------------------------------------------------
 
 
+# Peptide bond: C(i)--N(i+1) <= 2.0 Angstrom, the test Java Dangle uses
+# (AtomSpec.checkConnection, sqDistance <= 4.00, "from Molikin").
+# BioPython's PPBuilder default (< 1.8) breaks stretched but real bonds,
+# e.g. 1ihj A40-A41 at 1.981 Angstrom.
+_PEPTIDE_BOND_MAX = 2.0
+
+
 class _PeptideBondBuilder(PPBuilder):
     """``PPBuilder`` whose bond test does not change altloc selection.
 
@@ -405,8 +412,9 @@ class _PeptideBondBuilder(PPBuilder):
     on the C and N atoms of the bonded altloc pair.  That switches only
     those two atoms to another conformer, so a residue with whole-residue
     alternates is measured with atoms from two conformers (1ctj A2:
-    tau 83.8 deg).  Here the bond test is the same -- any compatible
-    altloc pair with C--N < radius -- but atom selection is left at
+    tau 83.8 deg).  Here the bond test is any compatible altloc pair
+    with C--N <= :data:`_PEPTIDE_BOND_MAX` (Java Dangle's test, instead of
+    BioPython's C--N < 1.8), and atom selection is left at
     BioPython's default (highest occupancy), exactly as it was with
     ``CaPPBuilder``.
     """
@@ -427,7 +435,7 @@ class _PeptideBondBuilder(PPBuilder):
                 n_loc = n_alt.get_altloc()
                 c_loc = c_alt.get_altloc()
                 if n_loc == c_loc or " " in (n_loc, c_loc):
-                    if (c_alt - n_alt) < self.radius:
+                    if (c_alt - n_alt) <= _PEPTIDE_BOND_MAX:
                         return True
         return False
 
@@ -438,7 +446,7 @@ def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
     Uses a BioPython ``PPBuilder`` (:class:`_PeptideBondBuilder`, which
     leaves altloc selection untouched) with ``aa_only=0``: consecutive
     residues are joined only when a peptide bond is present,
-    C(i)--N(i+1) < 1.8 Angstrom.  Modified amino acids (any residue
+    C(i)--N(i+1) <= 2.0 Angstrom (as in Java Dangle).  Modified amino acids (any residue
     with a CA atom) stay in the fragment, so neighbour-dependent
     measurements (phi, psi, omega, pre-Pro, ...) on the residues
     beside them use the real neighbour's atoms.  The Java Dangle

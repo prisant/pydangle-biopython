@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- fix: break fragments at peptide-bond gaps, not at dropped residues (89a58a2)
+- fix: treat C-N up to 2.0 A as a peptide bond, as Java Dangle does (580f29a)
+- fix: break fragments at peptide-bond gaps, not at dropped residues (5a22669)
 - feat: record mkdssp path and version in the JSONL metadata record (d979097)
 - fix: report every DSSP failure per file and exit 3 when any occurred (b4ccd94)
 - fix: run mkdssp in 26-chain batches for structures with >26 chains (f08e359)
