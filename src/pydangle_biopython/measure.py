@@ -456,6 +456,12 @@ def _build_fragments(model: Any) -> list[tuple[str, list[Any]]]:
     list-adjacent and corrupt every i-1 / i+1 term (reported by
     C. Williams, 1gk8 C 257, 2026-11-07).
 
+    A residue with no peptide bond to either neighbour (e.g. a free amino
+    acid modelled as a ligand) never forms a ``PPBuilder`` polypeptide, so
+    it is not reported at all: it has no phi, psi or omega.  Java Dangle
+    reports such residues with tau only.  Dropping them is intentional
+    (decision 2026-11-08; see ``DIFFERENCES.md``, "Chain gap handling").
+
     For chains with no peptide fragments (e.g. nucleic acids), falls
     back to the raw residue list.
 

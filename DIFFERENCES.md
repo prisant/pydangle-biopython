@@ -12,13 +12,49 @@ performance and correctness statistics.
 
 ### Chain gap handling
 
-Java Dangle treats discontinuities in residue sequence numbering as chain
-breaks, suppressing measurements across the gap even when coordinates are
-present and the peptide bond is intact.  Pydangle uses BioPython's
-`CaPPBuilder` to detect chain breaks based on CA–CA distance (< 4.6 Å),
-so measurements are computed whenever residues are physically connected.
-This adds a small number of correct measurements that Java Dangle omits
-(+4 lines across the top100 set).
+Both programs decide that residue *i* and *i+1* are joined by testing for a
+peptide bond: C(*i*)–N(*i+1*) ≤ 2.0 Å.  Java Dangle steps to the
+neighbouring residue in the model and applies this test
+(`AtomSpec.checkConnection`, `sqDistance <= 4.00`, "from Molikin"; O3′–P
+≤ 2.2 Å for nucleic acids).  Pydangle builds fragments with BioPython's
+`PPBuilder` using the same 2.0 Å test (`_PEPTIDE_BOND_MAX` in
+`measure.py`; since 2026-11-08 — earlier versions used `CaPPBuilder`, a
+CA–CA distance test, and then removed non-whitelisted residues from the
+fragment, which joined the residues on either side of a modified residue;
+see `CHANGELOG.md`, 5a22669).
+
+Remaining differences:
+
+- **Altloc labels.**  Pydangle joins two residues only through a
+  compatible pair of alternates (same altloc, or one of them blank).
+  Java Dangle ignores altloc labels in the bond test.  Example: 3rdo
+  A−6 exists only as altloc A and A−5 only as altloc B (C–N 1.33 Å);
+  Java links them, pydangle does not.  cctbx (MolProbity) does not link
+  them either.
+- **Isolated residues are not reported.**  A residue with no peptide bond
+  to either neighbour — a free amino acid modelled as a ligand, or a
+  residue stranded between two gaps — has no φ, ψ or ω.  Pydangle leaves
+  it out of the output entirely; Java Dangle reports it with τ (and χ)
+  only.  Decision 2026-11-08 (M. Prisant): drop them; they contribute
+  nothing to backbone analysis and are not polypeptide residues.  About
+  6–10 such records per dataset (top500: 3std C2; top8000/top2018: e.g.
+  3gfv B304 ASN, 1i9c B1305 GLU, 1qgj B235–236).  Exception: a chain with
+  no peptide bond at all (e.g. nucleic acid) falls back to its raw
+  residue list.
+- **C-terminal stubs.**  A residue bonded to its predecessor but modelled
+  with only an N atom is reported (all angles null); Java Dangle omits it.
+
+### Alternate conformations
+
+Pydangle uses BioPython's default atom selection: for each atom, the
+alternate with the highest occupancy.  Java Dangle (and cctbx, which the
+lab's reference data from Top8000 onward use) take altloc A / the first
+conformer.  The two agree wherever altloc A has the highest occupancy;
+elsewhere φ/ψ/ω can differ by several degrees (e.g. 1b6g A29 φ −58.95
+pydangle vs −54.04 Java).  At microheterogeneity (two residue types at one
+position, e.g. 2zs0 D31 Ile/Val) the programs may measure different
+residue types.  This is an open decision for v1.x (defect register B6,
+`tda-project-notes/documents/v1x_defect_register.md`).
 
 ### Modified amino acids
 

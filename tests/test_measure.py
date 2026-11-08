@@ -418,3 +418,16 @@ class TestStretchedPeptideBond:
         assert records[40]["psi"] == pytest.approx(-158.676, abs=0.001)
         assert records[41]["phi"] == pytest.approx(-105.926, abs=0.001)
         assert records[41]["omega"] == pytest.approx(88.45, abs=0.001)
+
+
+class TestIsolatedResidueNotReported:
+    """A residue with no peptide bond on either side is left out."""
+
+    def test_isolated_residue_dropped(self, smc_deleted_structure):
+        # Removing SMC 256 leaves VAL 255 and ALA 257 bonded to their other
+        # neighbours.  Moving ALA 254 far away isolates VAL 255 completely.
+        for atom in smc_deleted_structure[0]["C"][254]:
+            atom.set_coord(atom.get_coord() + 50.0)
+        records = _records_by_resnum(smc_deleted_structure, "phi; psi; tau")
+        assert 255 not in records
+        assert {257, 258} <= set(records)
