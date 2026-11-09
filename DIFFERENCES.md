@@ -58,11 +58,21 @@ residue types.  This is an open decision for v1.x (defect register B6,
 
 ### Modified amino acids
 
-Both programs use the same residue-name whitelist (derived from Java Dangle's
-`isProtOrNucAcid()`) to identify polymer residues.  Standard amino acids and
-common modifications such as PCA (pyroglutamic acid), MSE (selenomethionine),
-and CSD (cysteine sulfonic acid) are included.  Non-polymer het groups
-(chromophores, cofactors, etc.) are excluded.
+Both programs use the same residue-name list (derived from Java Dangle's
+`isProtOrNucAcid()`) to decide which residues get output records: the 20
+standard amino acids, ASX and GLX, the caps ACE, FOR, NH2 and NME, and the
+modified residues MSE, AIB, ABU, PCA, MLY, M3L, CYO, CSD and DGN.  The list
+is historical, not a definition of the polymer: other modified amino acids
+that are part of the chain (CSO, OCS, KCX, LLP, CME, SEP, TPO, PTR, ...) get
+no record.  Since the continuity fix their atoms are still used for the
+neighbours' φ, ψ and ω whenever the peptide bond is present, as in Java
+Dangle.  BioPython's peptide builder accepts a residue only if `is_aa` knows the
+name or the residue has a CA atom; the caps pass neither test, so they are
+left out of every fragment and pydangle never reports them.
+
+Which residue types a dataset keeps is a curation decision, not part of
+pydangle: the v1.x Richardson datasets keep the 20 standard amino acids and
+MSE (richardson-dataset-curation, `docs/differences_from_richardson_lab.md`).
 
 ### Chain ID formatting
 

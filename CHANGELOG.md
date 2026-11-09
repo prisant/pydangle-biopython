@@ -5,7 +5,8 @@ This file is auto-generated from git history after each commit.
 
 ## Unreleased
 
-- fix: give pre-Pro precedence over Ile/Val in rama_category (1787aea)
+- docs: correct the modified-residue paragraph in DIFFERENCES.md (44ea68b)
+- fix: give pre-Pro precedence over Ile/Val in rama_category (664e87a)
 - docs: document dropping isolated residues and the 2.0 A bond test (1a0e57e)
 - fix: treat C-N up to 2.0 A as a peptide bond, as Java Dangle does (a49ac5c)
 - fix: break fragments at peptide-bond gaps, not at dropped residues (5a22669)
