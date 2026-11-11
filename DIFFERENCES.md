@@ -46,15 +46,46 @@ Remaining differences:
 
 ### Alternate conformations
 
-Pydangle uses BioPython's default atom selection: for each atom, the
-alternate with the highest occupancy.  Java Dangle (and cctbx, which the
-lab's reference data from Top8000 onward use) take altloc A / the first
-conformer.  The two agree wherever altloc A has the highest occupancy;
-elsewhere φ/ψ/ω can differ by several degrees (e.g. 1b6g A29 φ −58.95
-pydangle vs −54.04 Java).  At microheterogeneity (two residue types at one
-position, e.g. 2zs0 D31 Ile/Val) the programs may measure different
-residue types.  This is an open decision for v1.x (defect register B6,
-`tda-project-notes/documents/v1x_defect_register.md`).
+By default (`--altloc first`, since v0.6) pydangle measures the first
+conformer, as Java Dangle and cctbx (the source of the Richardson Lab's
+reference angles from Top8000 onward) do.  "First" is per residue: among
+the alternates of the atoms concerned, the label written first in the file
+(lowest atom serial; normally A).  Ranking labels over the whole file
+instead fails where the file's first alternate residue has no A (3zeu A1
+has only B and C; the lab measured 3zeu B168 in A).  Each residue is
+measured in the first conformer shared by every atom of its φ/ψ window,
+C(i−1), N, CA, C, N(i+1); a measurement whose atoms lack that conformer
+uses the first conformer its own atoms share, and failing that each atom's
+first conformer.  So a residue present only as altloc B, and the residue
+after it, are measured in B, as in the lab's Top2018 database (6b6w
+B301–B302, 5j1s B431–B432).  Over all 9,095 Top2018 entries with
+alternates, pydangle and that database agree within 0.01° on 451,148 of
+451,186 φ/ψ values near an alternate.  Of the rest, 26 are in two entries
+the database numbers differently from the PDB files (4oe9, 4z54), and 12,
+in 7 entries, are values where the database uses conformer B and pydangle
+A.  The code is in `altloc.py`.
+
+At microheterogeneity (two residue types at one position) pydangle keeps
+one residue type, so each position gives one record: the first conformer
+whose type is a standard residue (the 20 amino acids or MSE), or the first
+conformer if none is.  2zs0 D31 Ile/Val gives the Ile, as Java Dangle
+measures it; 5k0a A157 CSO/Cys (CSO is conformer A) gives the Cys.  The
+lab's Top2018 database measures the standard conformer at all 13 such
+sites (26 φ/ψ values agree) but names the residue as the modified type.
+BioPython represents such sites either as one disordered residue or, when
+one type is written as HETATM (1din A123 CSD/Cys), as two residues with
+the same number; both are handled.  Where the first type has an atom
+without an altloc label, BioPython's parser keeps only that type (1ejg
+A22 Pro/Ser: the Pro; Java Dangle measured the Ser).
+
+`--altloc occupancy` restores the behaviour before v0.6, BioPython's
+default: for each atom separately the alternate with the highest occupancy
+(ties: the first listed), so one dihedral can mix atoms of two conformers,
+and split microheterogeneity sites give two records with the same residue
+number.  It reproduces earlier pydangle output byte for byte on the five
+Richardson datasets.  The JSONL `_meta` record states the mode
+(`"altloc"`).  Decisions 2026-11-09 (first conformer) and 2026-11-10
+(per-residue order, standard residue type).
 
 ### Modified amino acids
 

@@ -345,9 +345,10 @@ class TestProcessMeasurementCommands:
 # ---------------------------------------------------------------------------
 
 
-def _records_by_resnum(structure, commands):
+def _records_by_resnum(structure, commands, altloc_mode="first"):
     lines = process_measurement_commands(
-        "1gk8", structure, commands, output_format="jsonl"
+        "1gk8", structure, commands, output_format="jsonl",
+        altloc_mode=altloc_mode,
     )
     return {json.loads(line)["resnum"]: json.loads(line) for line in lines}
 
@@ -387,7 +388,11 @@ class TestModifiedResidueContinuity:
 
 
 class TestFragmentBuildingKeepsAltlocSelection:
-    """Peptide-bond detection must not change which altloc is measured."""
+    """Peptide-bond detection must not change which altloc is measured.
+
+    Run in ``occupancy`` mode, where nothing else changes the selection
+    (``first`` mode selects conformers on purpose; see test_altloc.py).
+    """
 
     def test_selected_altlocs_unchanged(self, altloc_nterm_structure):
         def selected(structure):
@@ -398,12 +403,16 @@ class TestFragmentBuildingKeepsAltlocSelection:
             }
 
         before = selected(altloc_nterm_structure)
-        process_measurement_commands("1ctj", altloc_nterm_structure, "tau; phi")
+        process_measurement_commands(
+            "1ctj", altloc_nterm_structure, "tau; phi", altloc_mode="occupancy"
+        )
         assert selected(altloc_nterm_structure) == before
 
     def test_tau_from_single_conformer(self, altloc_nterm_structure):
-        records = _records_by_resnum(altloc_nterm_structure, "tau; phi; psi")
-        # Conformer B throughout (default highest occupancy), not a mix
+        records = _records_by_resnum(
+            altloc_nterm_structure, "tau; phi; psi", altloc_mode="occupancy"
+        )
+        # Conformer B throughout (highest occupancy), not a mix
         assert records[2]["tau"] == pytest.approx(106.719, abs=0.001)
 
 

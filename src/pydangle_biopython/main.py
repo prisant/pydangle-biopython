@@ -13,6 +13,7 @@ from typing import Any
 from Bio.PDB import MMCIFParser, PDBParser  # type: ignore[attr-defined]
 
 from pydangle_biopython import __version__
+from pydangle_biopython.altloc import MODES as ALTLOC_MODES
 from pydangle_biopython.dssp import DsspWarning, find_mkdssp, mkdssp_version
 from pydangle_biopython.fileinput import collect_files
 from pydangle_biopython.measure import process_measurement_commands
@@ -107,7 +108,7 @@ def _requests_dssp(command_string: str) -> bool:
 
 
 def _process_one_file(
-    args_tuple: tuple[str, str, str, str, tuple[str, ...] | None],
+    args_tuple: tuple[str, str, str, str, tuple[str, ...] | None, str],
 ) -> tuple[list[str], list[str]]:
     """Process a single structure file.
 
@@ -117,10 +118,11 @@ def _process_one_file(
     ----------
     args_tuple : tuple
         ``(filepath, file_format, command_string, output_format,
-        chain_filter)`` where *file_format* is ``'pdb'``, ``'cif'``,
-        or ``''`` (auto-detect), *output_format* is ``'csv'`` or
-        ``'jsonl'``, and *chain_filter* is a tuple of chain IDs to
-        include or ``None`` for all chains.
+        chain_filter, altloc_mode)`` where *file_format* is ``'pdb'``,
+        ``'cif'``, or ``''`` (auto-detect), *output_format* is ``'csv'``
+        or ``'jsonl'``, *chain_filter* is a tuple of chain IDs to
+        include or ``None`` for all chains, and *altloc_mode* is
+        ``'first'`` or ``'occupancy'``.
 
     Returns
     -------
@@ -131,9 +133,8 @@ def _process_one_file(
         Python's default once-per-location warning display, ensures no
         DSSP failure goes unreported, including in worker processes.
     """
-    filepath, file_format, command_string, output_format, chain_filter = (
-        args_tuple
-    )
+    (filepath, file_format, command_string, output_format, chain_filter,
+     altloc_mode) = args_tuple
     if not file_format:
         file_format = _guess_format(filepath)
     basename = os.path.basename(filepath)
@@ -155,6 +156,7 @@ def _process_one_file(
                 filepath=filepath,
                 output_format=output_format,
                 chain_filter=set(chain_filter) if chain_filter else None,
+                altloc_mode=altloc_mode,
             )
         except Exception as exc:
             print(
@@ -305,6 +307,19 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
 
+    ap.add_argument(
+        "--altloc",
+        choices=list(ALTLOC_MODES),
+        default="first",
+        dest="altloc_mode",
+        help=(
+            "Alternate-conformation selection: first (default; the first "
+            "conformer, the same one for every atom of a measurement, and "
+            "one residue type at microheterogeneity sites) or occupancy "
+            "(per-atom highest occupancy, the behaviour before v0.6)."
+        ),
+    )
+
     format_group = ap.add_mutually_exclusive_group()
     format_group.add_argument(
         "-p",
@@ -373,6 +388,7 @@ def main(argv: list[str] | None = None) -> int:
     file_format: str = args.file_format or ""
     command_string: str = args.command_string
     output_format: str = args.output_format
+    altloc_mode: str = args.altloc_mode
     chain_filter: tuple[str, ...] | None = (
         tuple(args.chain_filter) if args.chain_filter else None
     )
@@ -387,6 +403,7 @@ def main(argv: list[str] | None = None) -> int:
             "output_format": output_format,
             "files": len(all_files),
             "jobs": jobs,
+            "altloc": altloc_mode,
             "timestamp": datetime.now(timezone.utc)
             .isoformat(timespec="seconds"),
         }
@@ -410,7 +427,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
             output_lines, failures = _process_one_file(
                 (filepath, file_format, command_string, output_format,
-                 chain_filter),
+                 chain_filter, altloc_mode),
             )
             if failures:
                 dssp_failed_files.append(filepath)
@@ -419,7 +436,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         # Parallel processing
         work = [
-            (fp, file_format, command_string, output_format, chain_filter)
+            (fp, file_format, command_string, output_format, chain_filter,
+             altloc_mode)
             for fp in all_files
         ]
         with multiprocessing.Pool(jobs) as pool:

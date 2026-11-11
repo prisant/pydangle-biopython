@@ -96,6 +96,10 @@ pydangle-biopython -c 'phi; psi; dssp; dssp3; rama_category' structure.pdb
 # JSONL output (one JSON object per line)
 pydangle-biopython -o jsonl -c 'phi; psi; rama_category' structure.pdb
 
+# Alternate conformations: first conformer (default) or, as before v0.6,
+# per-atom highest occupancy (see DIFFERENCES.md, "Alternate conformations")
+pydangle-biopython --altloc occupancy -c 'phi; psi' structure.pdb
+
 # JSONL piped to jq for filtering
 pydangle-biopython -o jsonl -c 'phi; psi; rama_category' structure.pdb \
   | jq 'select(.rama_category=="General")'
@@ -202,6 +206,11 @@ Pydangle matches Java Dangle output to within rounding precision on the
 top100 PDB benchmark set.  Key differences include distance-based chain
 break detection (rather than sequence numbering gaps) and compact chain ID
 formatting.
+
+Like Java Dangle, pydangle measures the first alternate conformation by
+default (``--altloc first``), keeping one conformer across each residue's
+φ/ψ window; ``--altloc occupancy`` selects per-atom highest occupancy, the
+behaviour before v0.6.
 
 Pydangle extends Java Dangle with residue classification labels (rama3–6,
 cis/trans, chirality, atom completeness), DSSP secondary structure

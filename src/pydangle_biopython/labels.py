@@ -26,6 +26,7 @@ from typing import Any
 
 from Bio.PDB.vectors import calc_dihedral
 
+from pydangle_biopython import altloc
 from pydangle_biopython.dssp import label_dssp, label_dssp3
 
 # ---------------------------------------------------------------------------
@@ -44,10 +45,9 @@ def _compute_omega(residue_list: list[Any], index: int) -> float | None:
     prev = residue_list[index - 1]
     curr = residue_list[index]
     try:
-        v_ca0 = prev["CA"].get_vector()
-        v_c0 = prev["C"].get_vector()
-        v_n1 = curr["N"].get_vector()
-        v_ca1 = curr["CA"].get_vector()
+        v_ca0, v_c0, v_n1, v_ca1 = altloc.vectors(
+            [prev["CA"], prev["C"], curr["N"], curr["CA"]]
+        )
     except (KeyError, TypeError):
         return None
     radians = calc_dihedral(  # type: ignore[no-untyped-call]
@@ -343,10 +343,9 @@ def _compute_ca_chirality(residue: Any) -> float | None:
     Returns None if any required atom is missing (e.g. GLY).
     """
     try:
-        v_cb = residue["CB"].get_vector()
-        v_n = residue["N"].get_vector()
-        v_c = residue["C"].get_vector()
-        v_ca = residue["CA"].get_vector()
+        v_cb, v_n, v_c, v_ca = altloc.vectors(
+            [residue["CB"], residue["N"], residue["C"], residue["CA"]]
+        )
     except (KeyError, TypeError):
         return None
     radians = calc_dihedral(  # type: ignore[no-untyped-call]

@@ -14,6 +14,7 @@ from typing import Any
 from Bio.PDB.Polypeptide import PPBuilder
 from Bio.PDB.vectors import Vector, calc_angle, calc_dihedral
 
+from pydangle_biopython import altloc
 from pydangle_biopython.dssp import (
     get_dssp_assignments_for_file,
     set_dssp_assignments,
@@ -202,7 +203,7 @@ def compute_measurement(
 
     # Loop over alternative argument lists (separated by | in the command)
     for arg_list in command[2]:
-        vector_list: list[Any] = []
+        atom_list: list[Any] = []
         for offset, name_regex in arg_list:
             pos = residue_index + offset
             if pos < 0 or pos >= list_length:
@@ -211,12 +212,14 @@ def compute_measurement(
             matched = False
             for atom in residue:
                 if name_regex.match(atom.get_fullname()):
-                    vector_list.append(atom.get_vector())
+                    atom_list.append(atom)
                     matched = True
                     break  # Use the first matching atom
             if not matched:
                 break  # Required atom not found → try next alternative
 
+        # Coordinates per the altloc mode (one conformer per measurement)
+        vector_list = altloc.vectors(atom_list)
         result = calc_wrapper(function_key, vector_list, unknown_str)
         # If any alternative produces a valid result, use it
         if result != unknown_str:
@@ -575,16 +578,20 @@ def process_measurement_for_residue(
     hit_count = 0
     results: list[str] = []
 
-    for command in command_list:
-        result = compute_measurement(
-            command,
-            residue_list,
-            residue_index,
-            unknown_str,
-        )
-        if result != unknown_str:
-            hit_count += 1
-        results.append(result)
+    altloc.set_residue(residue_list, residue_index)
+    try:
+        for command in command_list:
+            result = compute_measurement(
+                command,
+                residue_list,
+                residue_index,
+                unknown_str,
+            )
+            if result != unknown_str:
+                hit_count += 1
+            results.append(result)
+    finally:
+        altloc.set_residue(None)
 
     if hit_count == 0:
         return None
@@ -619,6 +626,7 @@ def process_measurement_commands(
     filepath: str | None = None,
     output_format: str = "csv",
     chain_filter: set[str] | None = None,
+    altloc_mode: str = "first",
 ) -> list[str]:
     """Process measurement commands on an entire structure.
 
@@ -641,6 +649,11 @@ def process_measurement_commands(
     chain_filter : set[str] or None
         If provided, only emit output for residues in these chain(s).
         DSSP still runs on the full structure for correct assignments.
+    altloc_mode : str
+        ``"first"`` (default): measure the first conformer, consistently
+        within each measurement; ``"occupancy"``: BioPython's per-atom
+        highest occupancy (behaviour before v0.6).  ``"first"`` changes
+        the structure in place (see :mod:`pydangle_biopython.altloc`).
 
     Returns
     -------
@@ -649,6 +662,7 @@ def process_measurement_commands(
         valid measurement.
     """
     command_list = command_string_parser(commands)
+    altloc.set_mode(altloc_mode)
 
     # Set up DSSP assignments if any dssp labels are requested
     _dssp_labels = {'dssp', 'dssp3'}
@@ -667,6 +681,7 @@ def process_measurement_commands(
 
     filename_prefix = label + ":"
     for model in structure:
+        altloc.prepare_model(model)
         model_id = model.id + 1
         model_str = filename_prefix + str(model_id) + ":"
         for chain_id, residue_list in _build_fragments(model):

@@ -205,6 +205,19 @@ class TestCLI:
         assert "version" in meta
         assert "command" in meta
         assert "timestamp" in meta
+        assert meta["altloc"] == "first"
+
+    def test_altloc_option_recorded(self, pdb_file, capsys):
+        """--altloc occupancy is accepted and recorded in the metadata."""
+        argv = ["-o", "jsonl", "--altloc", "occupancy", "-c", "phi", pdb_file]
+        assert main(argv) == 0
+        meta = json.loads(capsys.readouterr().out.split("\n")[0])
+        assert meta["altloc"] == "occupancy"
+
+    def test_altloc_option_rejects_unknown(self, pdb_file):
+        """--altloc only takes first or occupancy."""
+        with pytest.raises(SystemExit):
+            main(["--altloc", "highest", pdb_file])
 
     def test_jsonl_has_expected_keys(self, pdb_file, capsys):
         """JSONL data records contain file, model, chain, resnum, ins, resname."""
